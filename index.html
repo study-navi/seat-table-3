@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>座席表｜授業配置管理</title>
+<link rel="stylesheet" href="https://study-navi.github.io/seat-table/style.css">
+</head>
+<body>
+<header class="topbar">
+<div class="brand">
+<div class="brand-mark">座</div>
+<div class="brand-text">
+<h1>座席表</h1>
+<p>授業配置を、すばやく分かりやすく。</p>
+</div>
+</div>
+<div class="save-indicator" id="saveIndicator">
+<span class="dot"></span>
+<span id="saveIndicatorText">この端末に自動保存</span>
+</div>
+</header>
+
+<nav class="tabs" id="tabs">
+<button class="tab-btn active" data-tab="seat">座席表</button>
+<button class="tab-btn" data-tab="students">生徒名簿 <span class="count" id="studentCount">0</span></button>
+<button class="tab-btn" data-tab="teachers">講師名簿 <span class="count" id="teacherCount">0</span></button>
+<button class="tab-btn" data-tab="print">印刷プレビュー</button>
+<button class="tab-btn" data-tab="settings">設定・バックアップ</button>
+</nav>
+
+<main id="app">
+<section id="view-seat" class="view"></section>
+<section id="view-students" class="view" hidden></section>
+<section id="view-teachers" class="view" hidden></section>
+<section id="view-print" class="view" hidden></section>
+<section id="view-settings" class="view" hidden></section>
+</main>
+
+<div id="toast" class="toast" hidden></div>
+<div id="modalRoot"></div>
+
+<script>
+  // 教室3用の設定。保存先キーと合言葉のプレフィックスだけを
+  // 教室ごとに分ける。app.js本体は柊山校のものをそのまま使う。
+  (function(){
+    var SUFFIX = "3";
+    function remap(key){ return key.replace(/^seat-table-/, "seat-table" + SUFFIX + "-"); }
+    window.__seatStorageOverride = {
+      getItem: function(k){ return window.localStorage.getItem(remap(k)); },
+      setItem: function(k, v){ return window.localStorage.setItem(remap(k), v); },
+      removeItem: function(k){ return window.localStorage.removeItem(remap(k)); }
+    };
+    window.__seatSessionStorageOverride = {
+      getItem: function(k){ return window.sessionStorage.getItem(remap(k)); },
+      setItem: function(k, v){ return window.sessionStorage.setItem(remap(k), v); },
+      removeItem: function(k){ return window.sessionStorage.removeItem(remap(k)); }
+    };
+    window.__seatCodePrefix = "campus" + SUFFIX + ":";
+  })();
+</script>
+<script src="https://study-navi.github.io/seat-table/app.js"></script>
+</body>
+</html>
