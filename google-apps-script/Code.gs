@@ -1,10 +1,15 @@
 /**
  * 座席表 Google自動バックアップ（教室3専用）
  * このファイルは seat-table-classroom-3 以外では使わないでください。
- * URLや合言葉はここに書かず、スクリプトプロパティの SHARED_TOKEN に合言葉を入れます。
+ * 管理情報は3教室共通の「バックアップ台帳」スプレッドシートへ書く。
+ * 実データJSONは、この教室専用のDriveフォルダへだけ保存する（セルには入れない）。
+ * URLや合言葉はここに書かず、スクリプトプロパティの SHARED_TOKEN に合言葉を入れる。
  */
 var CLASSROOM_ID = "seat-table-classroom-3";
+var LEDGER_SPREADSHEET_ID = "15X2-pTCaILM3l_OSc9zBGAuvA5uL-WBbShUMzOjtnsk";
+var LEDGER_SHEET_NAME = "バックアップ台帳";
 var HISTORY_KEEP = 5;
+var LEDGER_HEADERS = ["教室ID", "最終バックアップ日時", "バックアップファイルID", "バックアップファイル名", "保存状態", "メモ"];
 
 function jsonOut_(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
@@ -20,7 +25,7 @@ function expectedToken_() {
 
 function assertReady_() {
   var p = props_();
-  if (!p.getProperty("FOLDER_ID") || !p.getProperty("SPREADSHEET_ID") || !expectedToken_()) {
+  if (!p.getProperty("FOLDER_ID") || !expectedToken_()) {
     throw new Error("not_setup");
   }
 }
@@ -58,34 +63,43 @@ function doPost(e) {
   }
 }
 
+function classroomFolder_() {
+  return DriveApp.getFolderById(props_().getProperty("FOLDER_ID"));
+}
+
 function handleBackup_(body) {
   assertReady_();
   if (!body.json || typeof body.json !== "object") throw new Error("invalid_payload");
-  var jsonText = JSON.stringify(body.json);
-  var p = props_();
-  var folder = DriveApp.getFolderById(p.getProperty("FOLDER_ID"));
-  var stamp = Utilities.formatDate(new Date(), "Asia/Tokyo", "yyyyMMdd-HHmmss");
-  var datedName = CLASSROOM_ID + "-backup-" + stamp + ".json";
-  var latestName = CLASSROOM_ID + "-latest.json";
+  try {
+    var jsonText = JSON.stringify(body.json);
+    var folder = classroomFolder_();
+    var stamp = Utilities.formatDate(new Date(), "Asia/Tokyo", "yyyyMMdd-HHmmss");
+    var datedName = CLASSROOM_ID + "-backup-" + stamp + ".json";
+    var latestName = CLASSROOM_ID + "-latest.json";
 
-  var oldId = p.getProperty("LATEST_FILE_ID");
-  if (oldId) {
-    try { DriveApp.getFileById(oldId).setTrashed(true); } catch (e) {}
+    var oldId = props_().getProperty("LATEST_FILE_ID");
+    if (oldId) {
+      try { DriveApp.getFileById(oldId).setTrashed(true); } catch (e) {}
+    }
+    var latest = folder.createFile(latestName, jsonText, MimeType.PLAIN_TEXT);
+    props_().setProperty("LATEST_FILE_ID", latest.getId());
+    folder.createFile(datedName, jsonText, MimeType.PLAIN_TEXT);
+    pruneHistory_(folder);
+
+    var updatedAt = Utilities.formatDate(new Date(), "Asia/Tokyo", "yyyy-MM-dd HH:mm:ss");
+    writeLedger_(latest.getId(), datedName, "成功", "", updatedAt);
+    return { ok: true, classroomId: CLASSROOM_ID, fileName: datedName, updatedAt: new Date().toISOString() };
+  } catch (err) {
+    var memo = String(err && err.message ? err.message : "server_error");
+    if (memo.length > 80) memo = "server_error";
+    try { writeLedger_("", "", "エラー", memo, ""); } catch (e2) {}
+    throw err;
   }
-  var latest = folder.createFile(latestName, jsonText, MimeType.PLAIN_TEXT);
-  p.setProperty("LATEST_FILE_ID", latest.getId());
-  folder.createFile(datedName, jsonText, MimeType.PLAIN_TEXT);
-  pruneHistory_(folder);
-
-  var updatedAt = new Date().toISOString();
-  writeSheet_(latest.getId(), datedName, "OK", "", updatedAt);
-  return { ok: true, classroomId: CLASSROOM_ID, fileName: datedName, updatedAt: updatedAt };
 }
 
 function handleRestore_() {
   assertReady_();
-  var p = props_();
-  var fileId = p.getProperty("LATEST_FILE_ID");
+  var fileId = props_().getProperty("LATEST_FILE_ID");
   if (!fileId) throw new Error("no_backup");
   var file = DriveApp.getFileById(fileId);
   var parsed = JSON.parse(file.getBlob().getDataAsString());
@@ -100,11 +114,10 @@ function handleRestore_() {
 
 function handleStatus_() {
   assertReady_();
-  var p = props_();
   return {
     ok: true,
     classroomId: CLASSROOM_ID,
-    hasBackup: !!p.getProperty("LATEST_FILE_ID")
+    hasBackup: !!props_().getProperty("LATEST_FILE_ID")
   };
 }
 
@@ -124,40 +137,86 @@ function pruneHistory_(folder) {
   }
 }
 
-function writeSheet_(fileId, fileName, result, errInfo, updatedAt) {
-  var ss = SpreadsheetApp.openById(props_().getProperty("SPREADSHEET_ID"));
-  var sheet = ss.getSheets()[0];
-  sheet.getRange(2, 1, 1, 6).setValues([[
+function ledgerSheet_() {
+  var ss = SpreadsheetApp.openById(LEDGER_SPREADSHEET_ID);
+  var sheet = ss.getSheetByName(LEDGER_SHEET_NAME);
+  if (!sheet) {
+    throw new Error("not_setup");
+  }
+  return sheet;
+}
+
+function ensureLedgerHeaders_(sheet) {
+  var row1 = sheet.getRange(1, 1, 1, 6).getValues()[0];
+  var empty = !String(row1[0] || "").trim();
+  if (empty) {
+    sheet.getRange(1, 1, 1, 6).setValues([LEDGER_HEADERS]);
+  }
+}
+
+function findClassroomRow_(sheet) {
+  var last = Math.max(sheet.getLastRow(), 1);
+  if (last < 2) return -1;
+  var vals = sheet.getRange(2, 1, last, 1).getValues();
+  var i;
+  for (i = 0; i < vals.length; i++) {
+    if (String(vals[i][0] || "") === CLASSROOM_ID) return i + 2;
+  }
+  return -1;
+}
+
+function ensureLedgerRow_() {
+  var sheet = ledgerSheet_();
+  ensureLedgerHeaders_(sheet);
+  var row = findClassroomRow_(sheet);
+  if (row > 0) return row;
+  sheet.appendRow([CLASSROOM_ID, "", "", "", "未バックアップ", ""]);
+  return sheet.getLastRow();
+}
+
+/**
+ * この教室の1行だけを更新する。他教室の行は触らない。JSONは書き込まない。
+ */
+function writeLedger_(fileId, fileName, status, memo, updatedAt) {
+  var sheet = ledgerSheet_();
+  ensureLedgerHeaders_(sheet);
+  var row = findClassroomRow_(sheet);
+  if (row < 0) {
+    sheet.appendRow([CLASSROOM_ID, "", "", "", "未バックアップ", ""]);
+    row = findClassroomRow_(sheet);
+  }
+  var current = sheet.getRange(row, 1, 1, 6).getValues()[0];
+  sheet.getRange(row, 1, 1, 6).setValues([[
     CLASSROOM_ID,
-    updatedAt || "",
-    fileId || "",
-    fileName || "",
-    result || "",
-    errInfo || ""
+    updatedAt || current[1] || "",
+    fileId || current[2] || "",
+    fileName || current[3] || "",
+    status || "",
+    memo || ""
   ]]);
 }
 
 /**
- * エディタから最初に1回だけ実行する。
- * 事前にスクリプトプロパティ SHARED_TOKEN へ合言葉を入れておく。
+ * エディタから教室ごとに最初に1回実行する。
+ * 事前にスクリプトプロパティ SHARED_TOKEN へ、この教室専用の合言葉を入れておく。
+ * 台帳スプレッドシートは新規作成せず、既存の共通台帳を使う。
+ * Driveフォルダだけ、この教室用に用意する。
  */
 function initialSetup() {
   if (expectedToken_() === "") {
     throw new Error("スクリプトプロパティ SHARED_TOKEN に合言葉を入れてから、もう一度 initialSetup を実行してください。");
   }
-  var folder = DriveApp.createFolder("座席表バックアップ-" + CLASSROOM_ID);
-  var ss = SpreadsheetApp.create("座席表バックアップ管理-" + CLASSROOM_ID);
-  var sheet = ss.getActiveSheet();
-  sheet.setName("管理");
-  sheet.getRange(1, 1, 1, 6).setValues([[
-    "教室ID", "最終更新日時", "バックアップファイルID", "バックアップファイル名", "保存結果", "エラー情報"
-  ]]);
-  sheet.getRange(2, 1, 1, 6).setValues([[CLASSROOM_ID, "", "", "", "", "未バックアップ"]]);
-  DriveApp.getFileById(ss.getId()).moveTo(folder);
-  props_().setProperties({
-    SPREADSHEET_ID: ss.getId(),
-    FOLDER_ID: folder.getId()
-  }, false);
-  Logger.log("セットアップ完了。フォルダURL: " + folder.getUrl());
-  Logger.log("スプレッドシートURL: " + ss.getUrl());
+  var folderId = props_().getProperty("FOLDER_ID");
+  var folder = null;
+  if (folderId) {
+    try { folder = DriveApp.getFolderById(folderId); } catch (e) { folder = null; }
+  }
+  if (!folder) {
+    folder = DriveApp.createFolder("座席表バックアップ-" + CLASSROOM_ID);
+    props_().setProperty("FOLDER_ID", folder.getId());
+  }
+  ensureLedgerRow_();
+  Logger.log("セットアップ完了。教室ID: " + CLASSROOM_ID);
+  Logger.log("Driveフォルダ: " + folder.getUrl());
+  Logger.log("台帳: https://docs.google.com/spreadsheets/d/" + LEDGER_SPREADSHEET_ID + "/edit");
 }
