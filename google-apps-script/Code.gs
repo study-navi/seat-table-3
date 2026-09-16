@@ -1,14 +1,11 @@
 /**
- * 座席表 Google自動バックアップ（教室3専用）
- * このファイルは seat-table-classroom-3 以外では使わないでください。
- * 管理情報は3教室共通の「バックアップ台帳」スプレッドシートへ書く。
- * 実データJSONは、この教室専用のDriveフォルダへだけ保存する（セルには入れない）。
- * URLや合言葉はここに書かず、スクリプトプロパティの SHARED_TOKEN に合言葉を入れる。
+ * 座席表 授業履歴（教室3専用）
+ * seat-table-classroom-3 以外では使わないでください。
+ * 管理情報は共通台帳へ。JSON実体はこの教室専用Driveフォルダのみ。
  */
 var CLASSROOM_ID = "seat-table-classroom-3";
 var LEDGER_SPREADSHEET_ID = "15X2-pTCaILM3l_OSc9zBGAuvA5uL-WBbShUMzOjtnsk";
 var LEDGER_SHEET_NAME = "バックアップ台帳";
-var HISTORY_KEEP = 5;
 var LEDGER_HEADERS = ["教室ID", "最終バックアップ日時", "バックアップファイルID", "バックアップファイル名", "保存状態", "メモ"];
 
 function jsonOut_(obj) {
@@ -42,7 +39,6 @@ function authorize_(body) {
 }
 
 function doGet() {
-  // 疎通確認のみ。バックアップ本体は返さない。
   return jsonOut_({ ok: true, classroomId: CLASSROOM_ID, postOnly: true });
 }
 
@@ -50,13 +46,17 @@ function doPost(e) {
   try {
     var body = parseBody_(e);
     authorize_(body);
-    if (body.action === "backup") return jsonOut_(handleBackup_(body));
+    if (body.action === "backup") return jsonOut_(handleBackup_(body, "auto"));
+    if (body.action === "finalizeLesson") return jsonOut_(handleBackup_(body, "finalized"));
     if (body.action === "restore") return jsonOut_(handleRestore_());
     if (body.action === "status") return jsonOut_(handleStatus_());
+    if (body.action === "history") return jsonOut_(handleHistory_());
+    if (body.action === "snapshot") return jsonOut_(handleSnapshot_(body));
     return jsonOut_({ ok: false, error: "failed" });
   } catch (err) {
     var code = String(err && err.message ? err.message : "server_error");
-    if (code !== "unauthorized" && code !== "classroom_mismatch" && code !== "not_setup" && code !== "invalid_payload" && code !== "no_backup") {
+    if (code !== "unauthorized" && code !== "classroom_mismatch" && code !== "not_setup" &&
+        code !== "invalid_payload" && code !== "no_backup" && code !== "not_found") {
       code = "server_error";
     }
     return jsonOut_({ ok: false, error: code, classroomId: CLASSROOM_ID });
@@ -67,34 +67,133 @@ function classroomFolder_() {
   return DriveApp.getFolderById(props_().getProperty("FOLDER_ID"));
 }
 
-function handleBackup_(body) {
+function nowParts_() {
+  var now = new Date();
+  return {
+    iso: now.toISOString(),
+    ledger: Utilities.formatDate(now, "Asia/Tokyo", "yyyy-MM-dd HH:mm:ss"),
+    dateStamp: Utilities.formatDate(now, "Asia/Tokyo", "yyyyMMdd"),
+    timeStamp: Utilities.formatDate(now, "Asia/Tokyo", "HHmmss")
+  };
+}
+
+function normalizeTargetDate_(raw) {
+  var s = String(raw || "").trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  return Utilities.formatDate(new Date(), "Asia/Tokyo", "yyyy-MM-dd");
+}
+
+function targetDateStamp_(targetDate) {
+  return String(targetDate || "").replace(/-/g, "");
+}
+
+function buildEnvelope_(data, kind, targetDate) {
+  var parts = nowParts_();
+  return {
+    meta: {
+      savedAt: parts.iso,
+      kind: kind,
+      targetDate: normalizeTargetDate_(targetDate),
+      classroomId: CLASSROOM_ID
+    },
+    data: data
+  };
+}
+
+function unwrapSnapshot_(parsed) {
+  if (parsed && parsed.meta && parsed.data) {
+    return { meta: parsed.meta, data: parsed.data };
+  }
+  return {
+    meta: {
+      savedAt: "",
+      kind: "auto",
+      targetDate: "",
+      classroomId: CLASSROOM_ID
+    },
+    data: parsed
+  };
+}
+
+function historyFileName_(kind, targetDate) {
+  var parts = nowParts_();
+  return CLASSROOM_ID + "-" + kind + "-" + targetDateStamp_(targetDate) + "-" + parts.timeStamp + ".json";
+}
+
+function isHistoryFileName_(name) {
+  if (name === CLASSROOM_ID + "-latest.json") return false;
+  var re = new RegExp("^" + CLASSROOM_ID + "-(auto|finalized)-\\d{8}-\\d{6}\\.json$");
+  if (re.test(name)) return true;
+  if (name.indexOf(CLASSROOM_ID + "-backup-") === 0 && name.slice(-5) === ".json") return true;
+  return false;
+}
+
+function parseHistoryFileName_(name) {
+  var m = name.match(new RegExp("^" + CLASSROOM_ID + "-(auto|finalized)-(\\d{8})-(\\d{6})\\.json$"));
+  if (m) {
+    var d = m[2];
+    return {
+      kind: m[1],
+      targetDate: d.slice(0, 4) + "-" + d.slice(4, 6) + "-" + d.slice(6, 8),
+      savedAt: d.slice(0, 4) + "-" + d.slice(4, 6) + "-" + d.slice(6, 8) + "T" +
+        m[3].slice(0, 2) + ":" + m[3].slice(2, 4) + ":" + m[3].slice(4, 6) + "+09:00"
+    };
+  }
+  m = name.match(new RegExp("^" + CLASSROOM_ID + "-backup-(\\d{8})-(\\d{6})\\.json$"));
+  if (m) {
+    var d2 = m[1];
+    return {
+      kind: "auto",
+      targetDate: "",
+      savedAt: d2.slice(0, 4) + "-" + d2.slice(4, 6) + "-" + d2.slice(6, 8) + "T" +
+        m[2].slice(0, 2) + ":" + m[2].slice(2, 4) + ":" + m[2].slice(4, 6) + "+09:00"
+    };
+  }
+  return { kind: "auto", targetDate: "", savedAt: "" };
+}
+
+function updateLatestFile_(folder, jsonText) {
+  var latestName = CLASSROOM_ID + "-latest.json";
+  var latestId = props_().getProperty("LATEST_FILE_ID");
+  var latestFile = null;
+  if (latestId) {
+    try { latestFile = DriveApp.getFileById(latestId); } catch (e) { latestFile = null; }
+  }
+  if (!latestFile) {
+    var it = folder.getFilesByName(latestName);
+    if (it.hasNext()) latestFile = it.next();
+  }
+  if (latestFile) {
+    latestFile.setContent(jsonText);
+    props_.setProperty("LATEST_FILE_ID", latestFile.getId());
+    return latestFile;
+  }
+  latestFile = folder.createFile(latestName, jsonText, MimeType.PLAIN_TEXT);
+  props_.setProperty("LATEST_FILE_ID", latestFile.getId());
+  return latestFile;
+}
+
+function handleBackup_(body, kind) {
   assertReady_();
   if (!body.json || typeof body.json !== "object") throw new Error("invalid_payload");
-  try {
-    var jsonText = JSON.stringify(body.json);
-    var folder = classroomFolder_();
-    var stamp = Utilities.formatDate(new Date(), "Asia/Tokyo", "yyyyMMdd-HHmmss");
-    var datedName = CLASSROOM_ID + "-backup-" + stamp + ".json";
-    var latestName = CLASSROOM_ID + "-latest.json";
-
-    var oldId = props_().getProperty("LATEST_FILE_ID");
-    if (oldId) {
-      try { DriveApp.getFileById(oldId).setTrashed(true); } catch (e) {}
-    }
-    var latest = folder.createFile(latestName, jsonText, MimeType.PLAIN_TEXT);
-    props_().setProperty("LATEST_FILE_ID", latest.getId());
-    folder.createFile(datedName, jsonText, MimeType.PLAIN_TEXT);
-    pruneHistory_(folder);
-
-    var updatedAt = Utilities.formatDate(new Date(), "Asia/Tokyo", "yyyy-MM-dd HH:mm:ss");
-    writeLedger_(latest.getId(), datedName, "成功", "", updatedAt);
-    return { ok: true, classroomId: CLASSROOM_ID, fileName: datedName, updatedAt: new Date().toISOString() };
-  } catch (err) {
-    var memo = String(err && err.message ? err.message : "server_error");
-    if (memo.length > 80) memo = "server_error";
-    try { writeLedger_("", "", "エラー", memo, ""); } catch (e2) {}
-    throw err;
-  }
+  var targetDate = normalizeTargetDate_(body.targetDate);
+  var envelope = buildEnvelope_(body.json, kind, targetDate);
+  var jsonText = JSON.stringify(envelope);
+  var folder = classroomFolder_();
+  var fileName = historyFileName_(kind, targetDate);
+  folder.createFile(fileName, jsonText, MimeType.PLAIN_TEXT);
+  var latest = updateLatestFile_(folder, jsonText);
+  var statusLabel = kind === "finalized" ? "授業完了・確定" : "自動保存";
+  writeLedger_(latest.getId(), fileName, statusLabel, kind, envelope.meta.savedAt);
+  return {
+    ok: true,
+    classroomId: CLASSROOM_ID,
+    fileName: fileName,
+    fileId: latest.getId(),
+    kind: kind,
+    targetDate: targetDate,
+    updatedAt: envelope.meta.savedAt
+  };
 }
 
 function handleRestore_() {
@@ -102,14 +201,77 @@ function handleRestore_() {
   var fileId = props_().getProperty("LATEST_FILE_ID");
   if (!fileId) throw new Error("no_backup");
   var file = DriveApp.getFileById(fileId);
-  var parsed = JSON.parse(file.getBlob().getDataAsString());
+  if (!fileInClassroomFolder_(file)) throw new Error("classroom_mismatch");
+  var unwrapped = unwrapSnapshot_(JSON.parse(file.getBlob().getDataAsString()));
+  if (unwrapped.meta.classroomId && unwrapped.meta.classroomId !== CLASSROOM_ID) {
+    throw new Error("classroom_mismatch");
+  }
   return {
     ok: true,
     classroomId: CLASSROOM_ID,
-    json: parsed,
+    json: unwrapped.data,
+    meta: unwrapped.meta,
     fileName: file.getName(),
     updatedAt: file.getLastUpdated().toISOString()
   };
+}
+
+function handleSnapshot_(body) {
+  assertReady_();
+  var fileId = String(body.fileId || "");
+  if (!fileId) throw new Error("invalid_payload");
+  var file = DriveApp.getFileById(fileId);
+  if (!fileInClassroomFolder_(file)) throw new Error("classroom_mismatch");
+  if (!isHistoryFileName_(file.getName()) && file.getName() !== CLASSROOM_ID + "-latest.json") {
+    throw new Error("not_found");
+  }
+  var unwrapped = unwrapSnapshot_(JSON.parse(file.getBlob().getDataAsString()));
+  if (unwrapped.meta.classroomId && unwrapped.meta.classroomId !== CLASSROOM_ID) {
+    throw new Error("classroom_mismatch");
+  }
+  var parsedName = parseHistoryFileName_(file.getName());
+  return {
+    ok: true,
+    classroomId: CLASSROOM_ID,
+    fileId: file.getId(),
+    fileName: file.getName(),
+    savedAt: unwrapped.meta.savedAt || parsedName.savedAt,
+    kind: unwrapped.meta.kind || parsedName.kind,
+    targetDate: unwrapped.meta.targetDate || parsedName.targetDate,
+    json: unwrapped.data
+  };
+}
+
+function handleHistory_() {
+  assertReady_();
+  var folder = classroomFolder_();
+  var files = folder.getFiles();
+  var items = [];
+  while (files.hasNext()) {
+    var f = files.next();
+    var name = f.getName();
+    if (!isHistoryFileName_(name)) continue;
+    var parsed = parseHistoryFileName_(name);
+    if (!parsed.targetDate) {
+      try {
+        var unwrapped = unwrapSnapshot_(JSON.parse(f.getBlob().getDataAsString()));
+        if (unwrapped.meta.targetDate) parsed.targetDate = unwrapped.meta.targetDate;
+        if (unwrapped.meta.kind) parsed.kind = unwrapped.meta.kind;
+        if (unwrapped.meta.savedAt) parsed.savedAt = unwrapped.meta.savedAt;
+      } catch (eMeta) {}
+    }
+    items.push({
+      fileId: f.getId(),
+      fileName: name,
+      savedAt: parsed.savedAt || f.getLastUpdated().toISOString(),
+      kind: parsed.kind,
+      targetDate: parsed.targetDate
+    });
+  }
+  items.sort(function (a, b) {
+    return String(b.savedAt).localeCompare(String(a.savedAt));
+  });
+  return { ok: true, classroomId: CLASSROOM_ID, items: items };
 }
 
 function handleStatus_() {
@@ -121,35 +283,26 @@ function handleStatus_() {
   };
 }
 
-function pruneHistory_(folder) {
-  var prefix = CLASSROOM_ID + "-backup-";
-  var files = folder.getFiles();
-  var dated = [];
-  while (files.hasNext()) {
-    var f = files.next();
-    var name = f.getName();
-    if (name.indexOf(prefix) === 0 && name.slice(-5) === ".json") dated.push(f);
+function fileInClassroomFolder_(file) {
+  var folderId = props_().getProperty("FOLDER_ID");
+  if (!folderId) return false;
+  var parents = file.getParents();
+  while (parents.hasNext()) {
+    if (parents.next().getId() === folderId) return true;
   }
-  dated.sort(function (a, b) { return a.getName() < b.getName() ? 1 : -1; });
-  var i;
-  for (i = HISTORY_KEEP; i < dated.length; i++) {
-    dated[i].setTrashed(true);
-  }
+  return false;
 }
 
 function ledgerSheet_() {
   var ss = SpreadsheetApp.openById(LEDGER_SPREADSHEET_ID);
   var sheet = ss.getSheetByName(LEDGER_SHEET_NAME);
-  if (!sheet) {
-    throw new Error("not_setup");
-  }
+  if (!sheet) throw new Error("not_setup");
   return sheet;
 }
 
 function ensureLedgerHeaders_(sheet) {
   var row1 = sheet.getRange(1, 1, 1, 6).getValues()[0];
-  var empty = !String(row1[0] || "").trim();
-  if (empty) {
+  if (!String(row1[0] || "").trim()) {
     sheet.getRange(1, 1, 1, 6).setValues([LEDGER_HEADERS]);
   }
 }
@@ -170,19 +323,16 @@ function ensureLedgerRow_() {
   ensureLedgerHeaders_(sheet);
   var row = findClassroomRow_(sheet);
   if (row > 0) return row;
-  sheet.appendRow([CLASSROOM_ID, "", "", "", "未バックアップ", ""]);
+  sheet.appendRow([CLASSROOM_ID, "", "", "", "未保存", ""]);
   return sheet.getLastRow();
 }
 
-/**
- * この教室の1行だけを更新する。他教室の行は触らない。JSONは書き込まない。
- */
 function writeLedger_(fileId, fileName, status, memo, updatedAt) {
   var sheet = ledgerSheet_();
   ensureLedgerHeaders_(sheet);
   var row = findClassroomRow_(sheet);
   if (row < 0) {
-    sheet.appendRow([CLASSROOM_ID, "", "", "", "未バックアップ", ""]);
+    sheet.appendRow([CLASSROOM_ID, "", "", "", "未保存", ""]);
     row = findClassroomRow_(sheet);
   }
   var current = sheet.getRange(row, 1, 1, 6).getValues()[0];
@@ -196,12 +346,6 @@ function writeLedger_(fileId, fileName, status, memo, updatedAt) {
   ]]);
 }
 
-/**
- * エディタから教室ごとに最初に1回実行する。
- * 事前にスクリプトプロパティ SHARED_TOKEN へ、この教室専用の合言葉を入れておく。
- * 台帳スプレッドシートは新規作成せず、既存の共通台帳を使う。
- * Driveフォルダだけ、この教室用に用意する。
- */
 function initialSetup() {
   if (expectedToken_() === "") {
     throw new Error("スクリプトプロパティ SHARED_TOKEN に合言葉を入れてから、もう一度 initialSetup を実行してください。");
@@ -213,10 +357,9 @@ function initialSetup() {
   }
   if (!folder) {
     folder = DriveApp.createFolder("座席表バックアップ-" + CLASSROOM_ID);
-    props_().setProperty("FOLDER_ID", folder.getId());
+    props_.setProperty("FOLDER_ID", folder.getId());
   }
   ensureLedgerRow_();
   Logger.log("セットアップ完了。教室ID: " + CLASSROOM_ID);
   Logger.log("Driveフォルダ: " + folder.getUrl());
-  Logger.log("台帳: https://docs.google.com/spreadsheets/d/" + LEDGER_SPREADSHEET_ID + "/edit");
 }
