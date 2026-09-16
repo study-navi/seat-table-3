@@ -183,7 +183,7 @@ function handleBackup_(body, kind) {
   var fileName = historyFileName_(kind, targetDate);
   folder.createFile(fileName, jsonText, MimeType.PLAIN_TEXT);
   var latest = updateLatestFile_(folder, jsonText);
-  var statusLabel = kind === "finalized" ? "授業完了・確定" : "自動保存";
+  var statusLabel = kind === "finalized" ? "保存した授業" : "自動保存";
   writeLedger_(latest.getId(), fileName, statusLabel, kind, envelope.meta.savedAt);
   return {
     ok: true,
