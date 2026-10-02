@@ -1,0 +1,1036 @@
+:root{
+--blue: #2952a3;
+--blue-dark: #1d3c7a;
+--blue-pale: #eef3fc;
+--ink: #1f2733;
+--ink-soft: #5b6472;
+--line: #d8dee7;
+--line-soft: #e8ecf2;
+--bg: #f5f7fb;
+--card: #ffffff;
+--green: #2e8b57;
+--amber: #b8860b;
+--red: #c0392b;
+--radius: 8px;
+--gap: 12px;
+--row-alt: #f7f9fc;
+--print-subject-size: 15pt;
+--print-student-size: 10.5pt;
+--print-grade-size: 7.5pt;
+font-size: 15px;
+}
+
+*{ box-sizing: border-box; }
+html,body{ margin:0; padding:0; }
+body{
+font-family: "Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic",-apple-system,"Segoe UI",sans-serif;
+color: var(--ink);
+background: var(--bg);
+line-height: 1.5;
+}
+
+button{ font-family: inherit; cursor:pointer; }
+input, select, textarea{ font-family: inherit; font-size: 0.95em; }
+
+/* ---------- Topbar ---------- */
+.topbar{
+display:flex; align-items:center; justify-content:space-between;
+padding: 14px 20px;
+background: var(--card);
+border-bottom: 1px solid var(--line);
+position: sticky; top:0; z-index: 30;
+}
+.brand{ display:flex; align-items:center; gap:12px; }
+.brand-mark{
+width:40px;height:40px;border-radius:10px;
+background: var(--blue); color:#fff;
+display:flex;align-items:center;justify-content:center;
+font-weight:700; font-size:1.1em; flex-shrink:0;
+}
+.brand-text h1{ margin:0; font-size:1.15em; }
+.brand-text p{ margin:0; font-size:0.78em; color:var(--ink-soft); }
+.save-indicator{ display:flex; align-items:center; gap:6px; font-size:0.82em; color:var(--ink-soft); white-space:nowrap; }
+.save-indicator .dot{ width:8px;height:8px;border-radius:50%; background: var(--green); }
+.save-indicator.saving .dot{ background: var(--amber); }
+.save-indicator.error .dot{ background: var(--red); }
+.google-backup-error{ color: var(--red); margin: 8px 0 0; }
+#googleBackupStatusBox p{ margin: 4px 0; }
+.history-view-badge{
+display:inline-block; margin-left:8px; padding:2px 8px; border-radius:999px;
+background:#fff3cd; color:#856404; font-size:0.55em; vertical-align:middle;
+}
+body.history-view-mode{ padding-bottom:72px; }
+.history-view-banner{
+position:fixed; left:0; right:0; bottom:0; z-index:300;
+background:var(--blue-dark); color:#fff; box-shadow:0 -4px 16px rgba(0,0,0,0.18);
+}
+.history-view-banner-inner{
+max-width:1400px; margin:0 auto; padding:12px 16px;
+display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between;
+}
+.history-view-banner-text{ font-size:0.92em; font-weight:600; }
+.history-view-banner-actions{ display:flex; flex-wrap:wrap; gap:8px; }
+.history-view-banner .btn{ background:#fff; color:var(--blue-dark); border:none; }
+.history-view-banner .btn.primary{ background:var(--green); color:#fff; }
+.history-list{ max-height:60vh; overflow:auto; }
+.history-day-group{ border:1px solid var(--line); border-radius:8px; padding:12px; margin-bottom:12px; }
+.history-day-group h4{ margin:0 0 8px; font-size:1em; }
+.history-day-summary{ margin:0 0 8px; padding-left:1.2em; color:var(--ink-soft); font-size:0.9em; }
+.history-day-summary li{ margin:4px 0; }
+.history-finalized-note{ margin:0 0 8px; color:var(--green); font-size:0.88em; font-weight:600; }
+.history-entries{ display:flex; flex-direction:column; gap:8px; }
+.history-entry{
+display:flex; flex-wrap:wrap; gap:8px; align-items:center; justify-content:space-between;
+border-top:1px solid var(--line-soft); padding-top:8px;
+}
+.history-entry-head{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.history-kind{
+display:inline-block; padding:2px 8px; border-radius:999px; font-size:0.78em; font-weight:600;
+}
+.history-kind.auto{ background:var(--blue-pale); color:var(--blue-dark); }
+.history-kind.finalized{ background:#e8f6ee; color:var(--green); }
+.history-saved-at{ font-size:0.86em; color:var(--ink-soft); }
+.history-loading{ color:var(--ink-soft); padding:12px 0; }
+@media (max-width:640px){
+.history-view-banner-inner{ flex-direction:column; align-items:stretch; }
+.history-view-banner-actions .btn{ flex:1; }
+.history-entry{ flex-direction:column; align-items:stretch; }
+}
+
+/* ---------- Tabs ---------- */
+.tabs{
+display:flex; gap:4px; padding: 0 16px;
+background: var(--card); border-bottom: 1px solid var(--line);
+overflow-x:auto;
+}
+.tab-btn{
+border:none; background:none; padding: 12px 14px; font-size:0.95em;
+color: var(--ink-soft); border-bottom: 2px solid transparent; white-space:nowrap;
+}
+.tab-btn.active{ color: var(--blue-dark); border-bottom-color: var(--blue); font-weight:600; }
+.tab-btn .count{
+display:inline-block; margin-left:4px; padding: 1px 7px; border-radius: 10px;
+background: var(--blue-pale); color: var(--blue-dark); font-size: 0.85em;
+}
+
+main{ padding: 18px; max-width: 1400px; margin: 0 auto; }
+.view[hidden]{ display:none; }
+
+/* ---------- Generic panel ---------- */
+.panel{
+background: var(--card); border:1px solid var(--line); border-radius: var(--radius);
+padding: 16px; margin-bottom: 16px;
+}
+.eyebrow{ font-size:0.72em; letter-spacing:0.08em; color: var(--ink-soft); text-transform:uppercase; margin:0 0 2px; }
+.page-head h2{ margin:4px 0 4px; font-size:1.5em; }
+.page-head .sub{ margin:0 0 14px; color: var(--ink-soft); font-size:0.9em; }
+
+.btn{
+border:1px solid var(--line); background:#fff; border-radius:6px;
+padding:8px 12px; font-size:0.88em; color: var(--ink); white-space:nowrap;
+}
+.btn:hover{ background: var(--blue-pale); }
+.btn.primary{ background: var(--blue); color:#fff; border-color: var(--blue); }
+.btn.primary:hover{ background: var(--blue-dark); }
+.btn.danger{ color: var(--red); border-color: #f0c4bd; }
+.btn.danger:hover{ background: #fdecea; }
+.btn.ghost{ border-color: transparent; background:none; }
+.print-preview-page #btnImportEweb,
+.print-preview-page a.btn[href^="javascript:"]{
+background: transparent !important;
+color: inherit !important;
+border-color: var(--line) !important;
+}
+.btn:disabled{ opacity:0.45; cursor:not-allowed; }
+.btn-row{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+
+/* eWeb取込専用アクセント。primary（青）・danger（赤）とは別系統のティール
+   共有操作の汎用ボタン指定より詳細度を上げて、塗りつぶしが効くようにする */
+#btnImportEweb,
+#view-seat .js-share-actions #btnImportEweb{
+background: #0f5c56;
+color: #fff;
+border-color: #0f5c56;
+}
+#btnImportEweb:hover,
+#view-seat .js-share-actions #btnImportEweb:hover{
+background: #134e4a;
+border-color: #134e4a;
+color: #fff;
+}
+#btnImportEweb:focus,
+#btnImportEweb:focus-visible,
+#view-seat .js-share-actions #btnImportEweb:focus,
+#view-seat .js-share-actions #btnImportEweb:focus-visible{
+outline: 2px solid #0f766e;
+outline-offset: 2px;
+color: #fff;
+}
+#btnImportEweb:disabled,
+#view-seat .js-share-actions #btnImportEweb:disabled{
+background: #9cb8b5;
+border-color: #9cb8b5;
+color: #f4fffd;
+}
+#view-settings a.btn.primary[href^="javascript:"]{
+background: #0f5c56;
+color: #fff;
+border-color: #0f5c56;
+}
+#view-settings a.btn.primary[href^="javascript:"]:hover{
+background: #134e4a;
+border-color: #134e4a;
+color: #fff;
+}
+#view-settings a.btn.primary[href^="javascript:"]:focus,
+#view-settings a.btn.primary[href^="javascript:"]:focus-visible{
+outline: 2px solid #0f766e;
+outline-offset: 2px;
+color: #fff;
+}
+
+.multi-print-range{
+display:flex; flex-wrap:wrap; gap:12px; margin: 12px 0;
+}
+.multi-print-range label{ display:flex; align-items:center; gap:6px; font-size:0.9em; }
+.multi-print-range input[type=date]{ padding:6px 8px; border:1px solid var(--line); border-radius:6px; }
+.multi-print-summary{ font-size:0.9em; font-weight:600; color: var(--blue-dark); margin: 0 0 10px; }
+.multi-date-list{
+max-height: 36vh; overflow:auto; border:1px solid var(--line); border-radius:8px; padding:8px;
+}
+.multi-date-list .opt{ margin:0 0 6px; }
+.multi-date-list .opt:last-child{ margin-bottom:0; }
+#multiDayPrint{ display: none !important; }
+/* 印刷前の収まり計算用。画面には出さず、A3実寸でレイアウトする */
+body.multi-day-print #multiDayPrint{
+display:block !important;
+position:fixed; left:-120vw; top:0;
+width: var(--paper-w); height: var(--paper-h);
+overflow:hidden; opacity:0; pointer-events:none; z-index:-1;
+}
+
+/* ---------- Seat table toolbar ---------- */
+.seat-toolbar{
+display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:14px;
+}
+.seat-toolbar .date-field{ display:flex; align-items:center; gap:6px; font-size:0.9em; }
+.seat-toolbar input[type=date]{ padding:6px 8px; border:1px solid var(--line); border-radius:6px; }
+
+.preset-panel{
+display:flex; flex-wrap:wrap; gap:14px; align-items:center; justify-content:space-between;
+background: var(--blue-pale); border:1px solid #cfe0f7; border-radius: var(--radius);
+padding: 12px 14px; margin-bottom:16px;
+}
+.preset-title{ font-weight:600; font-size:0.9em; color: var(--blue-dark); }
+.preset-title small{ display:block; font-weight:400; color: var(--ink-soft); }
+.weekday-grid{ display:flex; gap:6px; flex-wrap:wrap; }
+.weekday-chip{
+border:1px solid var(--line); background:#fff; border-radius:6px; padding:6px 10px; font-size:0.85em;
+text-align:center; min-width:56px;
+}
+.weekday-chip .wd-label{ font-size: 0.72em; color: var(--ink-soft); display:block; }
+.weekday-chip.selected{ border-color: var(--blue); box-shadow: inset 0 0 0 1px var(--blue); }
+.weekday-chip.has-preset .wd-label{ color: var(--green); font-weight:600; }
+.preset-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+
+.legend{ display:flex; gap:16px; font-size:0.8em; color: var(--ink-soft); margin-bottom:10px; flex-wrap:wrap; }
+.legend .swatch{ display:inline-block; width:10px;height:10px;border-radius:2px; margin-right:4px; vertical-align:middle; }
+.legend .swatch.course{ background:#3f6fd6; }
+.legend .swatch.transfer{ background:#2e8b57; }
+.legend .swatch.absent{ background:#c0392b; }
+.legend .swatch.solo{ background:#8e44ad; }
+.legend .swatch.trial{ background:#f1c40f; }
+
+/* ---------- Lesson blocks ---------- */
+.blocks{ display:flex; flex-direction:column; gap:20px; }
+.lesson-block{
+background:#fff; border:1px solid var(--line); border-radius: var(--radius); overflow:hidden;
+box-shadow: 0 1px 3px rgba(20,26,38,0.04);
+}
+.block-head{
+display:flex; flex-wrap:wrap; align-items:center; gap:10px; justify-content:space-between;
+padding: 12px 16px; background: #f6f8fc; border-bottom:2px solid var(--line);
+}
+.block-head-left{ display:flex; flex-wrap:wrap; align-items:center; gap:12px; }
+.block-index{
+display:inline-block; background: var(--blue); color:#fff; font-weight:700; font-size:0.8em;
+padding:3px 10px; border-radius:20px; flex-shrink:0;
+}
+.time-input{ display:flex; align-items:center; gap:6px; font-size:0.88em; }
+.time-input input[type=time]{ padding:4px 6px; border:1px solid var(--line); border-radius:6px; width:100px; }
+.time-choice select{ padding:5px 8px; border:1px solid var(--line); border-radius:6px; font-size:0.88em; }
+.block-actions{ display:flex; gap:6px; flex-wrap:wrap; }
+
+.sheet-wrap{ overflow-x:auto; scrollbar-width:thin; }
+.sheet-wrap::-webkit-scrollbar{ height:6px; }
+.sheet-wrap::-webkit-scrollbar-thumb{ background:#c7cede; border-radius:3px; }
+.sheet-wrap::-webkit-scrollbar-track{ background:transparent; }
+.sheet{ min-width: 860px; }
+
+/* Each row (header rows, seat rows, group rows) is its OWN independent grid using
+the same column template. This prevents CSS Grid auto-placement from ever bleeding
+a cell into the wrong row/column, which previously caused misaligned, cramped-looking
+columns (student names and buttons appearing squeezed into the wrong, narrower column). */
+.sheet-header, .seat-row-wrap, .group-row-wrap{
+display:grid;
+grid-template-columns: 48px 140px 96px 64px minmax(170px,1fr) 96px 64px minmax(170px,1fr);
+}
+.th{
+background:#eef1f7; border-bottom:2px solid var(--line); padding:8px 8px;
+font-size:0.8em; color: var(--ink); font-weight:600; display:flex; align-items:center; justify-content:center;
+text-align:center;
+}
+.sheet-header.sub .th{ border-top:1px solid var(--line-soft); }
+.th.sub-head{ background:#f6f8fc; font-weight:500; color: var(--ink-soft); }
+.th.blank2{ grid-column: span 2; background:#eef1f7; }
+.th.group-head{ background:#f3eefc; color:#5a3f9e; }
+.th.side-left{ grid-column: span 3; background:#dfe9fb; color:var(--blue-dark); font-weight:700; }
+.th.side-right{ grid-column: span 3; background:#dfe9fb; color:var(--blue-dark); font-weight:700; }
+
+.cell{
+border-bottom:1px solid var(--line-soft); border-right:1px solid var(--line-soft);
+padding: 8px 7px; display:flex; align-items:center; gap:4px; min-height:52px;
+}
+.seat-row-wrap.alt-row .cell{ background: var(--row-alt); }
+.cell select, .cell input{
+width:100%; padding:6px 7px; border:1px solid var(--line); border-radius:5px; background:#fff;
+}
+.seat-num-cell{ flex-direction:column; gap:2px; }
+.seat-num-cell input{ text-align:center; padding:5px; font-weight:600; }
+.seat-move{ display:flex; gap:2px; }
+.seat-move button{ border:none; background:none; color:var(--ink-soft); font-size:0.8em; padding:0 3px; }
+.seat-move button:hover{ color: var(--blue); }
+
+.teacher-col select{ font-weight:700; color: var(--blue-dark); }
+
+.student-cell{ flex-direction:column; align-items:stretch; gap:4px; }
+.student-cell.status-course{ background: #eef3ff !important; }
+.student-cell.status-transfer{ background: #eefaf1 !important; }
+.student-cell.status-absent{ background: #fdecea !important; }
+.student-select{ font-weight:600; }
+.status-buttons{ display:flex; gap:4px; }
+.status-buttons button{
+border:1px solid var(--line); background:#fff; border-radius:4px; font-size:0.7em; padding:2px 6px; color:var(--ink-soft);
+}
+.status-buttons button.active.course{ background:#3f6fd6; color:#fff; border-color:#3f6fd6; }
+.status-buttons button.active.transfer{ background:#2e8b57; color:#fff; border-color:#2e8b57; }
+.status-buttons button.active.absent{ background:#c0392b; color:#fff; border-color:#c0392b; }
+.status-buttons button.js-solo-toggle.active{ background:#8e44ad; color:#fff; border-color:#8e44ad; }
+.status-buttons button.js-trial-toggle.active{ background:#f1c40f; color:#3a2f00; border-color:#f1c40f; }
+.student-cell.trial-active{ background:#fff9db !important; }
+
+.group-row{ background:#faf8ff; }
+.group-row .cell{ border-bottom:1px solid #e6def5; min-height:46px; }
+.group-name-cell input{ font-weight:600; }
+.group-count-cell{ justify-content:center; }
+.group-count-badge{ font-size:0.78em; color:var(--ink-soft); background:#efe8fb; padding:2px 8px; border-radius:10px; }
+.group-students-cell{ flex-wrap:wrap; align-items:flex-start; gap:6px; }
+.group-students-footer{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; width:100%; margin-top:4px; }
+.group-students-footer .add-student-chip{ flex:1; min-width:120px; }
+.group-students-footer .btn{ flex-shrink:0; }
+.chip-list{ display:flex; flex-wrap:wrap; gap:4px; flex:1; width:100%; }
+.chip{
+background:#efe8fb; color:#5a3f9e; border-radius:12px; padding:2px 8px 2px 10px; font-size:0.8em;
+display:flex; align-items:center; gap:4px;
+}
+.chip button{ border:none; background:none; color:#5a3f9e; font-weight:700; }
+.add-student-chip select{ min-width:120px; }
+.remove-student{ border:none; background:none; color:var(--ink-soft); font-size:0.9em; padding:0 4px; }
+.remove-student:hover{ color: var(--red); }
+
+.empty-note{ text-align:center; color: var(--ink-soft); padding: 26px 0; font-size:0.9em; }
+
+/* ---------- Roster pages ---------- */
+.roster-toolbar{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:10px; }
+.roster-toolbar input[type=search]{
+padding:8px 10px; border:1px solid var(--line); border-radius:6px; min-width:220px; flex:1;
+}
+.roster-hint{ font-size:0.82em; color: var(--ink-soft); margin: 0 0 10px; }
+.roster-hint .ok{ color: var(--green); margin-right:14px; }
+
+.roster-table-wrap{ overflow-x:auto; }
+.roster-table{ width:100%; border-collapse:collapse; min-width:760px; }
+.roster-table th{
+text-align:left; font-size:0.78em; color: var(--ink-soft); font-weight:600;
+border-bottom:2px solid var(--line); padding:8px 6px; white-space:nowrap;
+}
+.roster-table td{ border-bottom:1px solid var(--line-soft); padding:7px 6px; vertical-align:middle; }
+.roster-table tr:nth-child(even) td{ background: var(--row-alt); }
+.roster-table input[type=text], .roster-table input[type=date]{
+width:100%; border:1px solid transparent; border-radius:5px; padding:6px 7px; background:transparent;
+}
+.roster-table input[type=text]:hover, .roster-table input[type=date]:hover,
+.roster-table input[type=text]:focus, .roster-table input[type=date]:focus{
+border-color: var(--line); background:#fff;
+}
+.roster-table tr.drag-over{ outline: 2px dashed var(--blue); outline-offset:-2px; }
+.row-order{ display:flex; gap:2px; align-items:center; }
+.row-order button{ border:none; background:none; color:var(--ink-soft); }
+.row-order button:hover{ color:var(--blue); }
+.drag-handle{ cursor:grab; color:var(--ink-soft); padding:0 4px; }
+.roster-table .num-col{ color: var(--ink-soft); width:60px; }
+.roster-table .warn-badge{ color:var(--amber); font-size:0.75em; margin-left:4px; }
+
+/* ---------- Settings ---------- */
+.settings-grid{ display:grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap:16px; }
+.settings-card h3{ margin-top:0; font-size:1em; }
+.settings-card p{ font-size:0.86em; color: var(--ink-soft); }
+.file-drop{
+border:2px dashed var(--line); border-radius:8px; padding:18px; text-align:center; font-size:0.85em;
+color: var(--ink-soft); margin-top:8px;
+}
+
+/* ---------- Toast ---------- */
+.toast{
+position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+background: var(--ink); color:#fff; padding:10px 18px; border-radius:8px; font-size:0.88em;
+box-shadow:0 6px 18px rgba(0,0,0,0.2); z-index:100;
+}
+.toast.error{ background: var(--red); }
+
+/* ---------- Modal ---------- */
+.modal-backdrop{
+position:fixed; inset:0; background:rgba(20,26,38,0.45); display:flex; align-items:center; justify-content:center;
+z-index:200; padding:20px;
+}
+.modal{
+background:#fff; border-radius:12px; max-width:560px; width:100%; max-height:86vh; overflow:auto;
+padding:20px 22px; box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+}
+.modal h3{ margin-top:0; }
+.modal textarea{ width:100%; min-height:160px; border:1px solid var(--line); border-radius:6px; padding:8px; }
+.modal .option-list{ display:flex; flex-direction:column; gap:8px; margin:14px 0; }
+.modal label.opt{ display:flex; align-items:center; gap:8px; font-size:0.92em; border:1px solid var(--line); border-radius:6px; padding:9px 10px; }
+.modal label.opt:hover{ background: var(--blue-pale); }
+.modal-actions{ display:flex; justify-content:flex-end; gap:8px; margin-top:16px; }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 860px){
+main{ padding: 10px; }
+.topbar{ padding:10px 12px; }
+.brand-text p{ display:none; }
+.save-indicator span:not(.dot){ display:none; }
+.tabs{ padding:0 8px; }
+.tab-btn{ padding:10px 8px; font-size:0.88em; }
+.preset-panel{ flex-direction:column; align-items:stretch; }
+.block-actions{ margin-left:0; width:100%; }
+.sheet{ min-width: 780px; }
+}
+@media (max-width: 480px){
+:root{ font-size:14px; }
+.weekday-chip{ min-width:44px; padding:5px 6px; }
+}
+
+.block-teachers{ display:none; }
+
+/* ---------- Seat view layout (screen only; print / preview rules stay untouched) ---------- */
+@media screen{
+body:has(#view-seat:not([hidden])) main{ max-width: 1680px; }
+#view-seat{
+--control-h: 38px;
+background: #fff;
+}
+#view-seat .page-head{
+background: #fff;
+border-color: var(--line);
+padding: 16px 18px 14px;
+}
+#view-seat .seat-date-bar{
+display:flex; flex-wrap:wrap; align-items:center; gap:10px 18px;
+margin-bottom: 14px;
+}
+#view-seat .seat-date-bar h2{
+margin:0; font-size:1.35em; font-weight:700; line-height:1.3;
+}
+#view-seat .seat-date-bar .date-field{
+display:flex; align-items:center; gap:8px;
+font-size:0.9em; color: var(--ink-soft); font-weight:600;
+}
+#view-seat .seat-date-bar input[type=date]{
+height: var(--control-h);
+padding: 0 10px;
+border:1px solid var(--line);
+border-radius:6px;
+background:#fff;
+font-size:0.95em;
+color: var(--ink);
+}
+#view-seat .seat-history-actions{
+margin-bottom: 12px;
+}
+#view-seat .seat-history-actions .btn-row{
+display:flex; flex-wrap:wrap; gap:8px;
+}
+#view-seat .seat-toolbar{
+display:grid;
+grid-template-columns: repeat(2, minmax(0, 1fr));
+gap: 12px;
+align-items:stretch;
+margin-bottom:0;
+}
+#view-seat .toolbar-group{
+display:flex; flex-direction:column; align-items:flex-start; gap:8px;
+padding: 12px 14px;
+background: #fafbfd;
+border: 1px solid var(--line-soft);
+border-radius: 8px;
+}
+#view-seat .toolbar-label{
+font-size:0.75em; font-weight:700; color: var(--ink-soft);
+letter-spacing:0.06em;
+}
+#view-seat .toolbar-group .btn-row{ width: 100%; }
+#view-seat .btn{
+height: var(--control-h);
+padding: 0 12px;
+display:inline-flex; align-items:center; justify-content:center;
+font-size:0.9em;
+}
+#view-seat .js-share-actions .btn:not(.primary):not(.danger){
+background: #f7f8fb;
+color: var(--ink-soft);
+}
+#view-seat .js-sync-toggle-wrap{
+display:inline-flex !important; align-items:center; gap:6px;
+height: var(--control-h); padding: 0 10px;
+border:1px solid var(--line); border-radius:6px; background:#fff;
+font-size:0.88em; color: var(--ink);
+}
+#view-seat .preset-panel{
+background: #f7f9fc;
+border-color: var(--line);
+}
+#view-seat .legend{ margin-top: 8px; margin-bottom: 14px; }
+
+#view-seat input:focus,
+#view-seat select:focus{
+outline: 2px solid var(--blue);
+outline-offset: 1px;
+border-color: var(--blue);
+}
+
+/* Lesson blocks */
+#view-seat .blocks{ gap: 40px; }
+#view-seat .lesson-block{
+background:#fff;
+border:1px solid #c5cedc;
+border-left: 6px solid var(--blue);
+border-radius: var(--radius);
+box-shadow: none;
+overflow:hidden;
+}
+#view-seat .block-head{
+background: #e8eef8;
+border-bottom: 1px solid #c5cedc;
+padding: 16px 18px;
+gap: 14px;
+}
+#view-seat .block-head-left{
+align-items: center;
+gap: 14px 18px;
+}
+#view-seat .block-index{
+font-size:1em; padding: 6px 14px;
+letter-spacing: 0.02em;
+}
+#view-seat .block-teachers{
+display:block;
+font-size: 1.05em;
+font-weight: 700;
+color: var(--blue-dark);
+line-height: 1.3;
+}
+#view-seat .time-input{
+font-size:1em; font-weight:700; color: var(--ink);
+}
+#view-seat .time-input input[type=time],
+#view-seat .time-choice select{
+height: var(--control-h);
+padding: 0 8px;
+border:1px solid var(--line);
+border-radius:6px;
+background:#fff;
+font-size:0.95em;
+font-weight: 600;
+}
+#view-seat .time-input input[type=time]{ width: 124px; }
+#view-seat .block-actions{ gap:8px; }
+#view-seat .block-actions .btn:not(.primary):not(.danger){
+background: #fff;
+color: var(--ink-soft);
+}
+
+/* Sheet: seat number first, then teacher; keep left/right pairing */
+#view-seat .sheet{ min-width: 1080px; }
+#view-seat .sheet-header,
+#view-seat .seat-row-wrap,
+#view-seat .group-row-wrap{
+grid-template-columns: 84px 168px 88px 52px minmax(200px,1fr) 88px 52px minmax(200px,1fr);
+}
+#view-seat .cell{
+min-height: 62px;
+padding: 8px 10px;
+border-bottom: 1px solid #cfd6e2;
+border-right: 1px solid #e2e7ef;
+}
+#view-seat .cell select,
+#view-seat .cell input{
+height: var(--control-h);
+padding: 0 8px;
+font-size: 0.95em;
+background: #fff;
+border: 1px solid #c5cedc;
+}
+#view-seat .seat-num-cell{
+background: #dce6f4;
+align-items: stretch;
+}
+#view-seat .seat-row-wrap.alt-row .cell{ background: #f3f6fb; }
+#view-seat .seat-row-wrap.alt-row .seat-num-cell{ background: #d3deee; }
+#view-seat .seat-num-cell input.js-seat-num,
+#view-seat .seat-num-cell input.js-g-seat-num{
+font-size: 1.35em;
+font-weight: 800;
+font-variant-numeric: tabular-nums;
+text-align: center;
+letter-spacing: 0.02em;
+color: var(--ink);
+background: #fff;
+border: 1.5px solid #8fa0bc;
+height: 42px;
+}
+#view-seat .teacher-col select{
+font-weight: 700;
+font-size: 1.05em;
+color: var(--blue-dark);
+}
+#view-seat .student-select{
+font-weight: 700;
+font-size: 1.05em;
+color: var(--ink);
+}
+#view-seat .subject-select{
+font-weight: 500;
+font-size: 0.88em;
+color: var(--ink-soft);
+}
+#view-seat .grade-input{
+font-weight: 500;
+font-size: 0.8em;
+color: var(--ink-soft);
+text-align: center;
+}
+#view-seat .status-buttons{
+gap: 4px;
+margin-top: 2px;
+}
+#view-seat .status-buttons button{
+font-size: 0.75em;
+padding: 3px 7px;
+min-height: 24px;
+color: var(--ink-soft);
+background: #fff;
+}
+#view-seat .student-cell{
+background: #fff !important;
+box-shadow: none;
+}
+#view-seat .student-cell.status-course{
+background: #f6f8fd !important;
+box-shadow: inset 4px 0 0 #3f6fd6;
+}
+#view-seat .student-cell.status-transfer{
+background: #f5faf6 !important;
+box-shadow: inset 4px 0 0 #2e8b57;
+}
+#view-seat .student-cell.status-absent{
+background: #fdf7f6 !important;
+box-shadow: inset 4px 0 0 #c0392b;
+}
+#view-seat .student-cell.trial-active{
+background: #fffdf3 !important;
+box-shadow: inset 4px 0 0 #d4a017;
+}
+#view-seat .student-cell:has(.js-solo-toggle.active){
+background: #faf6fc !important;
+box-shadow: inset 4px 0 0 #8e44ad;
+}
+#view-seat .sheet-wrap{
+overflow-x: auto;
+-webkit-overflow-scrolling: touch;
+}
+
+/* Keep seat + teacher visible while the sheet scrolls sideways */
+#view-seat .sheet-header:not(.sub) > :nth-child(1),
+#view-seat .seat-row-wrap > :nth-child(1),
+#view-seat .group-row-wrap > :nth-child(1){
+position: sticky; left: 0; z-index: 2;
+}
+#view-seat .sheet-header:not(.sub) > :nth-child(2),
+#view-seat .seat-row-wrap > :nth-child(2),
+#view-seat .group-row-wrap > :nth-child(2){
+position: sticky; left: 84px; z-index: 2;
+}
+#view-seat .sheet-header.sub > .th.blank2{
+position: sticky; left: 0; z-index: 3;
+}
+#view-seat .sheet-header:not(.sub) > :nth-child(1),
+#view-seat .sheet-header:not(.sub) > :nth-child(2),
+#view-seat .sheet-header.sub > .th.blank2{ background: #e8eef8; }
+#view-seat .seat-row-wrap > :nth-child(2){ background: #fff; }
+#view-seat .seat-row-wrap.alt-row > :nth-child(2){ background: #f3f6fb; }
+#view-seat .group-row-wrap > :nth-child(1),
+#view-seat .group-row-wrap > :nth-child(2){ background: #faf8ff; }
+}
+
+@media screen and (max-width: 1100px){
+#view-seat .seat-toolbar{ grid-template-columns: 1fr; }
+}
+
+@media screen and (max-width: 860px){
+#view-seat{ --control-h: 40px; }
+#view-seat .page-head{ padding: 12px; }
+#view-seat .toolbar-group{ gap: 6px; }
+#view-seat .btn-row{ width: 100%; }
+#view-seat .btn{ min-height: 40px; }
+#view-seat .block-head{ align-items: flex-start; }
+#view-seat .block-actions{ width: 100%; }
+}
+
+@media screen and (max-width: 480px){
+#view-seat .seat-date-bar h2{ font-size: 1.1em; }
+#view-seat .time-input{ flex-wrap: wrap; }
+}
+
+/* ---------- Print images (hidden on screen except inside preview, shown when printing) ---------- */
+.print-image{ display:none; }
+.image-list{ display:flex; flex-direction:column; gap:8px; margin-top:10px; }
+.image-row{ display:flex; align-items:center; gap:10px; border:1px solid var(--line); border-radius:8px; padding:8px 10px; }
+.image-thumb{ width:48px; height:48px; object-fit:cover; border-radius:6px; border:1px solid var(--line); flex-shrink:0; }
+.image-row-controls{ display:flex; flex-direction:column; gap:4px; flex:1; }
+.image-row-controls label{ display:flex; align-items:center; gap:6px; font-size:0.8em; color:var(--ink-soft); }
+.image-row-controls input[type=range]{ flex:1; }
+
+/* ---------- Print settings panel (in the Print Preview tab) ---------- */
+.print-settings-panel h3{ margin:0 0 10px; font-size:0.95em; }
+.slider-row{ display:flex; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap; }
+.slider-row label{ min-width:120px; font-size:0.86em; color: var(--ink-soft); }
+.slider-row input[type=range]{ flex:1; min-width:160px; }
+.slider-row select{ padding:6px 8px; border:1px solid var(--line); border-radius:6px; }
+
+/* ---------- On-screen print preview (mimics the printed A3 landscape look) ---------- */
+.print-preview-wrap{ overflow-x:auto; padding:20px 0 40px; display:flex; justify-content:center; }
+.print-preview-page{
+position:relative; background:#fff; flex:0 0 auto; align-self:flex-start; width: var(--paper-w); padding:0;
+border:1px solid var(--line); box-shadow:0 4px 20px rgba(20,26,38,0.08);
+}
+.print-preview-page .blocks{ display:grid; grid-template-columns: repeat(2, 1fr); gap:14px; }
+/* 集団行: 集団名から読み取った時間を科目列に表示する */
+/* 科目が埋まっている集団行は、集団名の右に時間を出す */
+.group-name-cell{ gap:6px; }
+.group-name-cell input{ flex:1 1 auto; min-width:0; }
+.group-time-inline{
+flex:0 0 auto; font-size:11px; color: var(--muted, #64748b); white-space:nowrap;
+}
+.group-time-auto{
+display:flex; align-items:center; justify-content:center;
+width:100%; height:100%; min-width:0;
+font-size:11px; line-height:1.2;
+color: var(--muted, #64748b);
+white-space:nowrap; text-align:center; cursor:text;
+}
+/* プレビューを紙(A3横・余白8mm)と同じ縦横比で見せる */
+/* 用紙の高さはmmで明示する。aspect-ratio に頼ると印刷時の解決が変わり、
+   画像の % 位置がプレビューとずれる */
+/* 用紙の向きで幅と高さを入れ替える */
+:root{ --paper-w: 404mm; --paper-h: 281mm; }
+html[data-paper="portrait"]{ --paper-w: 281mm; --paper-h: 404mm; }
+.print-preview-page{ height: var(--paper-h); }
+/* 縮尺は zoom ではなく transform で当てる。
+   zoom は印刷時に無視され、内容が用紙からはみ出して切れるため。
+   ページ自体は実寸のまま、中身だけを縮める。 */
+@media screen{
+.print-preview-page .blocks{
+transform: scale(calc(var(--print-page-scale, 1) * 0.86));
+transform-origin: top left;
+width: calc(100% / (var(--print-page-scale, 1) * 0.86));
+}
+}
+/* 縦向きでも2列を維持する（1列にすると縦に伸びて逆に収まらない） */
+/* 科目・学年の列幅は文字サイズに追従させる（2文字＋余白ぶん） */
+:root{
+/* 科目は2文字、名前は4〜5文字ぶんを確保し、余った幅は生徒名へ回す */
+--print-subj-col: calc(var(--print-subject-size, 15pt) * 3.6 + 1.5mm);
+--print-grade-col: calc(var(--print-grade-size, 7.5pt) * 2 + 2.5mm);
+--print-name-col: calc(var(--print-student-size, 10.5pt) * 5.8 + 3mm);
+}
+/* プレビューは見た目を印刷に寄せつつ、クリックして編集できる状態を保つ。
+   未選択のセレクト／空の入力は文字も枠も出さず、空席は純粋な空白にする。
+   座席表画面（#view-seat）には適用しない。 */
+.print-preview-page .cell select:has(option[value=""]:checked),
+.print-preview-page .cell select[data-empty-sel="1"],
+.print-preview-page .cell input:placeholder-shown{
+visibility: hidden;
+}
+.print-preview-page .cell input::placeholder{ color:transparent !important; }
+/* 編集モード（「印刷と同じ見た目」をOFF）では画面で扱いやすい大きさに戻す */
+/* 編集モードでも用紙の高さは保つ。height:auto にすると % で置いた
+   画像の基準が変わり、印刷時に位置がずれるため。 */
+@media screen{
+html[data-print-look="0"] .print-preview-page{
+/* 枠幅を超えると横スクロールバーが出るため、はみ出さない幅にする */
+width:min(1400px, 100%) !important; transform:none !important;
+}
+html[data-print-look="0"] .print-preview-wrap{ height:auto !important; overflow:auto !important; }
+}
+/* 1対1の斜線。セル内SVG実要素のみ（背景画像は使わない）。
+   画面・プレビュー・印刷で同じ見た目。背景グラフィックOFFでも紙に出る。 */
+.cell.solo-blocked{
+position: relative;
+overflow: hidden !important;
+background-image: none;
+}
+.cell.solo-blocked select,
+.cell.solo-blocked input,
+.cell.solo-blocked .status-buttons{
+visibility: hidden;
+pointer-events: none;
+}
+.solo-slash-mark{
+display: block;
+position: absolute;
+top: 3px;
+left: 3px;
+width: calc(100% - 6px);
+height: calc(100% - 6px);
+overflow: hidden;
+pointer-events: none;
+z-index: 1;
+box-sizing: border-box;
+}
+#view-seat .cell.solo-blocked,
+#view-seat .seat-row-wrap.alt-row .cell.solo-blocked{
+background-image: none;
+}
+#view-seat .solo-slash-mark{
+display: block;
+}
+/* 折りたたみ用 */
+.print-panel-toggle{ margin:0 0 4px; }
+/* 行の高さ（縦の伸ばし）。0のときは自動 */
+.print-preview-page .seat-row-wrap,
+.print-preview-page .group-row-wrap{ min-height: var(--print-row-h, 0px); }
+.print-preview-page .lesson-block{ border:1.4px solid #55627a; border-radius:0; box-shadow:none; }
+.print-preview-page .block-head{ padding:4px 10px; background:#fff; border-bottom:1px solid #55627a; }
+.print-preview-page .block-actions{ display:none; }
+.print-preview-page .btn{ display:none !important; }
+.print-preview-page .time-choice{ display:none !important; }
+.print-preview-page .time-input input[type=time]{ border:none; background:transparent; padding:0; font-size:9pt; }
+.print-preview-page .time-input span{ font-size:9pt; }
+.print-preview-page .seat-move, .print-preview-page .row-order, .print-preview-page .status-buttons,
+.print-preview-page .js-remove-gstudent, .print-preview-page .add-student-chip{ display:none !important; }
+@media screen{
+.print-preview-page .sheet-header, .print-preview-page .seat-row-wrap, .print-preview-page .group-row-wrap{
+grid-template-columns: 32px 90px 84px 40px minmax(0,1fr) 84px 40px minmax(0,1fr);
+}
+}
+.print-preview-page .th{ font-size:9px; padding:3px; }
+.print-preview-page .cell{ min-height:34px; padding:3px 4px; }
+.print-preview-page .cell select, .print-preview-page .cell input{ border:none; background:transparent; padding:0; color:#000; }
+.print-preview-page .subject-select{ font-size: var(--print-subject-size) !important; font-weight:900; text-align:center; overflow:visible; white-space:nowrap; }
+.print-preview-page .cell{ overflow:visible; }
+.print-preview-page .cell.solo-blocked{ overflow:hidden !important; position:relative; background-image:none; }
+.print-preview-page .student-select{ font-size: var(--print-student-size) !important; font-weight:700; }
+.print-preview-page .grade-input{ font-size: var(--print-grade-size) !important; text-align:center; }
+.print-preview-page .teacher-col select{ font-size:9pt; }
+.print-preview-page .print-image{ display:block; position:absolute; z-index:2; touch-action:none; }
+.print-preview-page .page-head, .print-preview-page .preview-blocks{ position:relative; z-index:1; }
+
+@media screen and (max-width: 860px){
+.print-preview-page{ width:100%; padding:14px; }
+}
+
+/* ---------- Print ---------- */
+@media print{
+/* size は用紙の向き切替でJSが上書きする（#paper-orientation-style） */
+/* @page 自体の margin は使わない。ブラウザの印刷エンジンが
+   独自に余白を差し引くため、画面上の疑似レイアウトと食い違い、
+   実際の印刷でだけ内容が用紙からはみ出す原因になっていた。
+   余白は自分たちの padding として持たせ、404mm/281mm の中に含める。
+   画面プレビューと印刷の両方に同じ padding を適用し、
+   どちらでも使える幅を一致させる。 */
+/* 余白はブラウザ・プリンターの @page 計算に任せる。
+   自前で margin:0 + padding にすると、コピー機が本当の意味の
+   フチなし印刷に対応していない場合、ドライバ側が独自の余白を
+   強制してきて、かえって内容がずれてしまう。 */
+@page{ size: A3 landscape; margin: 10mm; }
+html,body{ background:#fff; width:100%; height:100%; overflow:hidden; }
+body, main{ margin:0; padding:0; background:#fff; max-width:100%; }
+.topbar, .tabs, .preset-panel, .legend, .seat-toolbar, .date-field, .btn, .toast, .status-buttons, .remove-student, .seat-move, .row-order{
+display:none !important;
+}
+.block-actions{ display:none !important; }
+main{ max-width:none; }
+.panel{ border:none; padding:0; }
+.page-head{ margin-bottom:4mm; }
+.page-head .eyebrow{ display:none; }
+.page-head h2{ font-size:16pt; margin:0; }
+.blocks{ display:grid; grid-template-columns: repeat(2, 1fr); gap:3mm; }
+.lesson-block{
+border:1.8pt solid #000; border-radius:0; break-inside:avoid;
+display:grid; grid-template-columns: 7mm 1fr;
+}
+.lesson-block::before{
+content: attr(data-time);
+writing-mode: vertical-rl;
+text-orientation: upright;
+grid-column: 1; grid-row: 1;
+display:flex; align-items:center; justify-content:center;
+font-size:7.5pt; font-weight:600; letter-spacing:0.5px;
+border-right:1.8pt solid #000; background:#fafafa;
+padding:2mm 0;
+}
+.block-head, .block-index{ display:none !important; }
+.sheet-wrap{ grid-column: 2; overflow: hidden !important; }
+/* 画面用の min-width:860px を印刷では解除し、紙の幅に収める */
+.sheet{ min-width: 0 !important; width: 100% !important; }
+/* 時間が未入力の枠では縦書き時間バーを出さず、表を全幅で使う */
+.lesson-block[data-time=""]{ grid-template-columns: 1fr; }
+.lesson-block[data-time=""]::before{ display:none !important; }
+.lesson-block[data-time=""] .sheet-wrap{ grid-column: 1; }
+.sheet-header, .seat-row-wrap, .group-row-wrap,
+.print-preview-page .sheet-header, .print-preview-page .seat-row-wrap, .print-preview-page .group-row-wrap{
+min-width:0;
+grid-template-columns: 9mm 18mm minmax(0, var(--print-subj-col)) minmax(0, var(--print-grade-col)) minmax(min(var(--print-name-col), 16%), 1fr) minmax(0, var(--print-subj-col)) minmax(0, var(--print-grade-col)) minmax(min(var(--print-name-col), 16%), 1fr);
+}
+.th.side-left, .th.side-right{ grid-column: span 3; }
+.th.blank2{ grid-column: span 2; }
+.th{ font-size:6.5pt; padding:0.8mm; background:#f4f4f4; border:0.5pt solid #bbb; }
+.cell{ min-height:8mm; padding:0.6mm 0.9mm; border:0.5pt solid #ccc; }
+.cell select, .cell input{ border:none; background:transparent; font-size:8pt; padding:0; color:#000;
+-webkit-appearance:none; appearance:none; }
+/* 空欄のplaceholder（—・学年 など）は紙に出さない */
+.cell input::placeholder{ color:transparent !important; }
+.cell input:placeholder-shown{ visibility:hidden !important; }
+/* 科目は列に収まる範囲で表示（あふれた文字は隠す） */
+.seat-row-wrap > .cell:nth-child(3) input,
+.seat-row-wrap > .cell:nth-child(6) input{ text-overflow:clip; overflow:hidden; }
+/* 未選択のセレクト（生徒を選択・— など）は空白にする */
+.cell select[data-empty-sel="1"],
+.cell select:has(option[value=""]:checked){ visibility:hidden !important; }
+.teacher-col select{ font-size:8.5pt; }
+/* subject is the #1 print priority: largest, boldest */
+.subject-select{ font-size: var(--print-subject-size) !important; font-weight:900 !important; text-align:center; }
+.student-select{ font-size: var(--print-student-size) !important; font-weight:700; min-width:0; max-width:100%; overflow:hidden; }
+.grade-input{ font-size: var(--print-grade-size) !important; text-align:center; }
+.seat-num-cell input{ font-size:8pt; border:none; text-align:center; }
+.student-cell.status-course{ background:#e4ecff !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+/* 1対1の斜線はセル内SVG実要素。背景画像は使わない。 */
+.cell.solo-blocked{
+position: relative !important;
+overflow: hidden !important;
+background-image: none !important;
+}
+.solo-slash-mark,
+#view-seat .solo-slash-mark{
+display: block !important;
+position: absolute;
+top: 3px;
+left: 3px;
+width: calc(100% - 6px);
+height: calc(100% - 6px);
+overflow: hidden;
+pointer-events: none;
+z-index: 1;
+}
+/* 振替は背景色に頼らず、太い枠線と「振」の印で示す。
+   Chromeの「背景のグラフィック」がオフだと背景色は印刷されないため。 */
+.student-cell.status-transfer{
+background:#e3f6e8 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact;
+border:1.6pt solid #2e8b57 !important;
+position:relative;
+}
+.student-cell.status-transfer::after{
+content:"振"; position:absolute; right:0.6mm; top:0;
+font-size:7pt; font-weight:700; color:#1b5e34; line-height:1.1;
+}
+/* 欠席の生徒は印刷では名前を出さない（席は空けて残す） */
+.student-cell.status-absent select,
+.student-cell.status-absent input{ visibility:hidden !important; }
+.student-cell.status-absent{ background:#fbe6e3 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; border-left:1.4pt dashed #c0392b; }
+.group-row{ background:#f6f2fd !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+.chip{ font-size:8pt; padding:1.5px 5.5px; }
+.chip button{ display:none; }
+/* position:fixed だと紙面ではページ基準になり、プレビュー(absolute)と位置がずれる */
+.print-image{ display:block !important; position:absolute; z-index:2; }
+#view-print > .panel.page-head, #view-print > .print-settings-panel{ display:none !important; }
+/* 印刷ボックス（@page 余白の内側）いっぱいに収め、固定mmではみ出さない */
+#view-seat{ width:100% !important; max-width:100% !important; overflow:hidden !important; padding:0 !important; }
+#view-seat .seat-history-actions,
+#view-seat .page-head .sub{ display:none !important; }
+#view-seat .page-head{ padding:0 !important; margin-bottom:3mm !important; border:none !important; }
+#view-print .print-preview-wrap{
+padding:0 !important; margin:0 !important;
+width:100% !important; max-width:100% !important;
+height:100% !important; overflow:hidden !important;
+}
+#view-print .print-preview-page{
+width:100% !important;
+max-width:100% !important;
+height:100% !important;
+max-height:100% !important;
+padding:0 !important; border:none !important; box-shadow:none !important;
+transform: none !important;
+overflow:hidden !important;
+box-sizing:border-box !important;
+}
+#view-print .print-preview-page .blocks,
+body.multi-day-print .multi-print-page .blocks,
+#view-seat .blocks{
+transform: scale(calc(var(--print-page-scale, 1) * 0.86));
+transform-origin: top left;
+width: calc(100% / (var(--print-page-scale, 1) * 0.86));
+}
+.seat-row-wrap, .group-row-wrap{ min-height: var(--print-row-h, 0px); }
+.group-time-auto{ font-size:7.5pt; color:#000; white-space:normal; line-height:1.15; min-width:0; overflow-wrap:anywhere; }
+.group-time-inline{ font-size:7.5pt; color:#000; white-space:normal; min-width:0; overflow-wrap:anywhere; }
+
+/* 複数日印刷: 画面には出さず、印刷時だけ1日1ページで出す */
+#multiDayPrint{ display:none !important; }
+body.multi-day-print .topbar,
+body.multi-day-print .tabs,
+body.multi-day-print #app,
+body.multi-day-print .toast,
+body.multi-day-print #modalRoot{
+display:none !important;
+}
+body.multi-day-print #multiDayPrint{
+display:block !important;
+position:static !important; left:auto !important; top:auto !important;
+width:100% !important; height:100% !important;
+opacity:1 !important; z-index:auto !important; pointer-events:auto !important;
+}
+body.multi-day-print .multi-print-page{
+break-after: page;
+page-break-after: always;
+width:100% !important;
+max-width:100% !important;
+height:100% !important;
+max-height:100% !important;
+padding:0 !important; border:none !important; box-shadow:none !important;
+transform: none !important;
+overflow:hidden !important;
+box-sizing:border-box !important;
+position: relative;
+}
+body.multi-day-print .multi-print-page:last-child{
+break-after: auto;
+page-break-after: auto;
+}
+#btnImportEweb,
+#view-settings a.btn.primary[href^="javascript:"]{
+background: none !important;
+color: inherit !important;
+border-color: transparent !important;
+}
+}
