@@ -2723,6 +2723,95 @@ document.addEventListener("DOMContentLoaded", init);
 })();
 
 /* ==========================================================
+   印刷: 横／縦の伸ばし
+   全体の大きさとは別に、紙面の中で横だけ・縦だけを伸ばす。
+   用紙からはみ出す分は fitBox 側で抑える。
+   ========================================================== */
+(function(){
+  var XKEY = "seat-table-print-stretch-x";
+  var YKEY = "seat-table-print-stretch-y";
+  var MIN = 70, MAX = 160, STEP = 5;
+  function read(key){
+    var v = parseFloat(STORAGE.getItem(key));
+    if (!isFinite(v) || v < MIN/100 || v > MAX/100) return 1;
+    return v;
+  }
+  function apply(){
+    document.documentElement.style.setProperty("--print-stretch-x", String(read(XKEY)));
+    document.documentElement.style.setProperty("--print-stretch-y", String(read(YKEY)));
+  }
+  function pctText(v){ return Math.round(v * 100) + "%"; }
+  function sync(){
+    if (window.__syncPrintPreview){ try{ window.__syncPrintPreview(); }catch(e){} }
+    window.dispatchEvent(new Event("resize"));
+  }
+  function setVal(key, input, lab, title, next){
+    var n = Math.round(next * 100);
+    if (n < MIN) n = MIN;
+    if (n > MAX) n = MAX;
+    n = Math.round(n / STEP) * STEP;
+    var v = n / 100;
+    try { STORAGE.setItem(key, String(v)); } catch(e){}
+    apply();
+    input.value = String(n);
+    lab.textContent = title + " " + pctText(v);
+    sync();
+  }
+  function makeCtrl(id, key, title){
+    var box = document.createElement("div");
+    box.className = "print-stretch-ctrl";
+    var lab = document.createElement("label");
+    lab.setAttribute("for", id);
+    var v = read(key);
+    lab.textContent = title + " " + pctText(v);
+    var minus = document.createElement("button");
+    minus.type = "button";
+    minus.className = "btn";
+    minus.textContent = "−";
+    minus.setAttribute("aria-label", title + "を小さく");
+    var input = document.createElement("input");
+    input.type = "range";
+    input.id = id;
+    input.min = String(MIN);
+    input.max = String(MAX);
+    input.step = String(STEP);
+    input.value = String(Math.round(v * 100));
+    var plus = document.createElement("button");
+    plus.type = "button";
+    plus.className = "btn";
+    plus.textContent = "＋";
+    plus.setAttribute("aria-label", title + "を大きく");
+    input.addEventListener("input", function(){
+      setVal(key, input, lab, title, parseInt(input.value, 10) / 100);
+    });
+    minus.addEventListener("click", function(){
+      setVal(key, input, lab, title, (parseInt(input.value, 10) - STEP) / 100);
+    });
+    plus.addEventListener("click", function(){
+      setVal(key, input, lab, title, (parseInt(input.value, 10) + STEP) / 100);
+    });
+    box.appendChild(lab);
+    box.appendChild(minus);
+    box.appendChild(input);
+    box.appendChild(plus);
+    return box;
+  }
+  function inject(){
+    var bar = document.querySelector(".print-panel-toggle");
+    if (!bar || bar.querySelector("#printStretchX")) return;
+    var wrap = document.createElement("div");
+    wrap.className = "print-stretch-controls";
+    wrap.appendChild(makeCtrl("printStretchX", XKEY, "横に伸ばす"));
+    wrap.appendChild(makeCtrl("printStretchY", YKEY, "縦に伸ばす"));
+    bar.appendChild(wrap);
+  }
+  apply();
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", inject);
+  else { try { inject(); } catch(e){} }
+  setInterval(function(){ try { inject(); } catch(e){} }, 1500);
+})();
+
+/* ==========================================================
    印刷: 行の高さ（縦の伸ばし）と、プレビューの画面フィット表示
    ========================================================== */
 (function(){
@@ -3683,9 +3772,17 @@ document.addEventListener("DOMContentLoaded", init);
   var applied = [];
   /* コピー機は @page 余白より内側しか印字できない。実寸ぴったりだと必ずはみ出す。 */
   var SAFETY = 0.86;
-  function userScale(){
-    var v = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--print-page-scale"));
-    return (isFinite(v) && v > 0.2) ? v : 1;
+  function cssVar(name, fallback){
+    var v = parseFloat(getComputedStyle(document.documentElement).getPropertyValue(name));
+    return (isFinite(v) && v > 0.2) ? v : fallback;
+  }
+  function userScale(){ return cssVar("--print-page-scale", 1); }
+  function userScaleX(){ return userScale() * cssVar("--print-stretch-x", 1); }
+  function userScaleY(){ return userScale() * cssVar("--print-stretch-y", 1); }
+  function clamp(v, lo, hi){
+    if (v < lo) return lo;
+    if (v > hi) return hi;
+    return v;
   }
   function paperPx(){
     var cs = getComputedStyle(document.documentElement);
@@ -3729,13 +3826,15 @@ document.addEventListener("DOMContentLoaded", init);
     }
     var availW = Math.max(1, w);
     var availH = Math.max(1, h - headH);
-    var need = Math.min(1, availW / Math.max(1, blocks.scrollWidth), availH / Math.max(1, blocks.scrollHeight));
-    var s = Math.min(userScale(), need) * SAFETY;
-    if (s < 0.35) s = 0.35;
-    if (s > 1) s = 1;
+    var maxX = availW / Math.max(1, blocks.scrollWidth);
+    var maxY = availH / Math.max(1, blocks.scrollHeight);
+    var fitX = Math.min(1, maxX) * SAFETY;
+    var fitY = Math.min(1, maxY) * SAFETY;
+    var sx = clamp(fitX * userScaleX(), 0.35, maxX * 0.98);
+    var sy = clamp(fitY * userScaleY(), 0.35, maxY * 0.98);
     blocks.style.transformOrigin = "top left";
-    blocks.style.transform = "scale(" + s + ")";
-    blocks.style.width = (100 / s) + "%";
+    blocks.style.transform = "scale(" + sx + ", " + sy + ")";
+    blocks.style.width = (100 / sx) + "%";
     blocks.style.marginLeft = "0";
     blocks.style.marginRight = "0";
     applied.push(blocks);
