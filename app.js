@@ -2727,7 +2727,6 @@ document.addEventListener("DOMContentLoaded", init);
    ========================================================== */
 (function(){
   var ROWKEY = "seat-table-print-row-h";
-  var FITKEY = "seat-table-preview-fit-v2";
   var MAXMM = 30;
   function q(s){ return document.querySelector(s); }
 
@@ -2741,13 +2740,9 @@ document.addEventListener("DOMContentLoaded", init);
   }
   function rowText(v){ return v > 0 ? ("行の高さ " + v + "mm") : "行の高さ 自動"; }
 
-  function readFit(){
+  function shouldFit(){
     /* 編集モードでは画面フィットの縮小をかけない */
-    if (STORAGE.getItem("seat-table-print-look") === "0") return false;
-    return STORAGE.getItem(FITKEY) !== "0";
-  }
-  if (STORAGE.getItem(FITKEY) == null){
-    try { STORAGE.setItem(FITKEY, "1"); } catch(e){}
+    return STORAGE.getItem("seat-table-print-look") !== "0";
   }
   function applyFit(){
     if (window.__suspendPreviewFit) return;
@@ -2755,7 +2750,7 @@ document.addEventListener("DOMContentLoaded", init);
     var page = q(".print-preview-page");
     if (!wrap || !page) return;
     page.style.transform = "none";
-    if (!readFit()){
+    if (!shouldFit()){
       page.style.transform = "";
       page.style.transformOrigin = "";
       wrap.style.height = "";
@@ -2813,24 +2808,6 @@ document.addEventListener("DOMContentLoaded", init);
     row.appendChild(input);
     if (anchor && anchor.parentElement) anchor.parentElement.insertBefore(row, anchor.nextSibling);
     else panel.appendChild(row);
-
-    var fitRow = makeRow(anchor);
-    var fitLab = document.createElement("label");
-    fitLab.textContent = "画面に合わせる";
-    var cb = document.createElement("input");
-    cb.type = "checkbox";
-    cb.id = "previewFit";
-    cb.checked = readFit();
-    cb.style.flex = "0 0 auto";
-    cb.style.width = "18px";
-    cb.style.height = "18px";
-    cb.addEventListener("change", function(){
-      try { STORAGE.setItem(FITKEY, cb.checked ? "1" : "0"); } catch(e){}
-      applyFit();
-    });
-    fitRow.appendChild(fitLab);
-    fitRow.appendChild(cb);
-    if (row.parentElement) row.parentElement.insertBefore(fitRow, row.nextSibling);
 
     var scaleEl = panel.querySelector("#printPageScale");
     if (scaleEl) scaleEl.addEventListener("input", scheduleFit);
