@@ -721,8 +721,9 @@ position: sticky; left: 0; z-index: 3;
 /* ---------- On-screen print preview (mimics the printed A3 landscape look) ---------- */
 .print-preview-wrap{ overflow-x:auto; padding:20px 0 40px; display:flex; justify-content:center; }
 .print-preview-page{
-position:relative; background:#fff; flex:0 0 auto; align-self:flex-start; width: var(--paper-w); padding:0;
+position:relative; background:#fff; flex:0 0 auto; align-self:flex-start; width: var(--paper-w); padding:3mm 6mm;
 border:1px solid var(--line); box-shadow:0 4px 20px rgba(20,26,38,0.08);
+box-sizing:border-box;
 }
 .print-preview-page .blocks{ display:grid; grid-template-columns: repeat(2, 1fr); gap:14px; }
 /* 集団行: 集団名から読み取った時間を科目列に表示する */
@@ -752,8 +753,10 @@ html[data-paper="portrait"]{ --paper-w: 281mm; --paper-h: 404mm; }
 @media screen{
 .print-preview-page .blocks{
 transform: scale(calc(var(--print-page-scale, 1) * 0.86));
-transform-origin: top left;
+transform-origin: top center;
 width: calc(100% / (var(--print-page-scale, 1) * 0.86));
+margin-left: auto;
+margin-right: auto;
 }
 }
 /* 縦向きでも2列を維持する（1列にすると縦に伸びて逆に収まらない） */
@@ -979,7 +982,7 @@ width:100% !important;
 max-width:100% !important;
 height:100% !important;
 max-height:100% !important;
-padding:0 !important; border:none !important; box-shadow:none !important;
+padding:3mm 6mm !important; border:none !important; box-shadow:none !important;
 transform: none !important;
 overflow:hidden !important;
 box-sizing:border-box !important;
@@ -988,8 +991,10 @@ box-sizing:border-box !important;
 body.multi-day-print .multi-print-page .blocks,
 #view-seat .blocks{
 transform: scale(calc(var(--print-page-scale, 1) * 0.86));
-transform-origin: top left;
+transform-origin: top center;
 width: calc(100% / (var(--print-page-scale, 1) * 0.86));
+margin-left: auto;
+margin-right: auto;
 }
 .seat-row-wrap, .group-row-wrap{ min-height: var(--print-row-h, 0px); }
 .group-time-auto{ font-size:7.5pt; color:#000; white-space:normal; line-height:1.15; min-width:0; overflow-wrap:anywhere; }
@@ -1017,7 +1022,7 @@ width:100% !important;
 max-width:100% !important;
 height:100% !important;
 max-height:100% !important;
-padding:0 !important; border:none !important; box-shadow:none !important;
+padding:3mm 6mm !important; border:none !important; box-shadow:none !important;
 transform: none !important;
 overflow:hidden !important;
 box-sizing:border-box !important;
