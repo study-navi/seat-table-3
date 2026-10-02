@@ -2730,7 +2730,7 @@ document.addEventListener("DOMContentLoaded", init);
 (function(){
   var XKEY = "seat-table-print-stretch-x";
   var YKEY = "seat-table-print-stretch-y";
-  var MIN = 70, MAX = 250, STEP = 5;
+  var MIN = 70, MAX = 250, STEP = 1;
   function read(key){
     var v = parseFloat(STORAGE.getItem(key));
     if (!isFinite(v) || v < MIN/100 || v > MAX/100) return 1;
