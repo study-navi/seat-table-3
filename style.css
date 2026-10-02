@@ -753,10 +753,10 @@ html[data-paper="portrait"]{ --paper-w: 281mm; --paper-h: 404mm; }
 @media screen{
 .print-preview-page .blocks{
 transform: scale(calc(var(--print-page-scale, 1) * 0.86));
-transform-origin: top center;
+transform-origin: top left;
 width: calc(100% / (var(--print-page-scale, 1) * 0.86));
-margin-left: auto;
-margin-right: auto;
+margin-left: 0;
+margin-right: 0;
 }
 }
 /* 縦向きでも2列を維持する（1列にすると縦に伸びて逆に収まらない） */
@@ -991,10 +991,10 @@ box-sizing:border-box !important;
 body.multi-day-print .multi-print-page .blocks,
 #view-seat .blocks{
 transform: scale(calc(var(--print-page-scale, 1) * 0.86));
-transform-origin: top center;
+transform-origin: top left;
 width: calc(100% / (var(--print-page-scale, 1) * 0.86));
-margin-left: auto;
-margin-right: auto;
+margin-left: 0;
+margin-right: 0;
 }
 .seat-row-wrap, .group-row-wrap{ min-height: var(--print-row-h, 0px); }
 .group-time-auto{ font-size:7.5pt; color:#000; white-space:normal; line-height:1.15; min-width:0; overflow-wrap:anywhere; }

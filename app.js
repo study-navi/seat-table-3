@@ -2746,8 +2746,8 @@ document.addEventListener("DOMContentLoaded", init);
   }
   function applyFit(){
     if (window.__suspendPreviewFit) return;
-    var wrap = q(".print-preview-wrap");
-    var page = q(".print-preview-page");
+    var wrap = q("#view-print .print-preview-wrap") || q(".print-preview-wrap");
+    var page = q("#view-print .print-preview-page") || q(".print-preview-page");
     if (!wrap || !page) return;
     page.style.transform = "none";
     if (!shouldFit()){
@@ -2755,6 +2755,7 @@ document.addEventListener("DOMContentLoaded", init);
       page.style.transformOrigin = "";
       wrap.style.height = "";
       wrap.style.overflow = "";
+      wrap.style.justifyContent = "";
       return;
     }
     var r = page.getBoundingClientRect();
@@ -2764,8 +2765,10 @@ document.addEventListener("DOMContentLoaded", init);
     var f = Math.min(availW / r.width, availH / r.height, 1);
     if (!isFinite(f) || f <= 0) f = 1;
     f = Math.max(0.2, f);
-    page.style.transformOrigin = "top center";
-    page.style.transform = "scale(" + f + ")";
+    var dx = (availW - r.width * f) / 2;
+    page.style.transformOrigin = "top left";
+    page.style.transform = "translateX(" + dx + "px) scale(" + f + ")";
+    wrap.style.justifyContent = "flex-start";
     wrap.style.height = Math.ceil(r.height * f) + "px";
     wrap.style.overflow = "hidden";
   }
@@ -3730,11 +3733,11 @@ document.addEventListener("DOMContentLoaded", init);
     var s = Math.min(userScale(), need) * SAFETY;
     if (s < 0.35) s = 0.35;
     if (s > 1) s = 1;
-    blocks.style.transformOrigin = "top center";
+    blocks.style.transformOrigin = "top left";
     blocks.style.transform = "scale(" + s + ")";
     blocks.style.width = (100 / s) + "%";
-    blocks.style.marginLeft = "auto";
-    blocks.style.marginRight = "auto";
+    blocks.style.marginLeft = "0";
+    blocks.style.marginRight = "0";
     applied.push(blocks);
     return blocks;
   }
