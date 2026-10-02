@@ -2727,7 +2727,7 @@ document.addEventListener("DOMContentLoaded", init);
    ========================================================== */
 (function(){
   var ROWKEY = "seat-table-print-row-h";
-  var FITKEY = "seat-table-preview-fit";
+  var FITKEY = "seat-table-preview-fit-v2";
   var MAXMM = 30;
   function q(s){ return document.querySelector(s); }
 
@@ -2745,6 +2745,9 @@ document.addEventListener("DOMContentLoaded", init);
     /* 編集モードでは画面フィットの縮小をかけない */
     if (STORAGE.getItem("seat-table-print-look") === "0") return false;
     return STORAGE.getItem(FITKEY) !== "0";
+  }
+  if (STORAGE.getItem(FITKEY) == null){
+    try { STORAGE.setItem(FITKEY, "1"); } catch(e){}
   }
   function applyFit(){
     if (window.__suspendPreviewFit) return;
