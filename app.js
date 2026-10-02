@@ -3770,15 +3770,21 @@ document.addEventListener("DOMContentLoaded", init);
    ========================================================== */
 (function(){
   var applied = [];
+  var lastSx = 0;
+  var lastSy = 0;
   /* コピー機は @page 余白より内側しか印字できない。実寸ぴったりだと必ずはみ出す。 */
   var SAFETY = 0.86;
   function cssVar(name, fallback){
     var v = parseFloat(getComputedStyle(document.documentElement).getPropertyValue(name));
     return (isFinite(v) && v > 0.2) ? v : fallback;
   }
-  function userScale(){ return cssVar("--print-page-scale", 1); }
-  function userScaleX(){ return userScale() * cssVar("--print-stretch-x", 1); }
-  function userScaleY(){ return userScale() * cssVar("--print-stretch-y", 1); }
+  function stored(key, fallback){
+    var v = parseFloat(STORAGE.getItem(key));
+    return (isFinite(v) && v > 0.2 && v < 2.6) ? v : fallback;
+  }
+  function userScale(){ return stored("seat-table-print-scale", cssVar("--print-page-scale", 1)); }
+  function userScaleX(){ return userScale() * stored("seat-table-print-stretch-x", cssVar("--print-stretch-x", 1)); }
+  function userScaleY(){ return userScale() * stored("seat-table-print-stretch-y", cssVar("--print-stretch-y", 1)); }
   function clamp(v, lo, hi){
     if (v < lo) return lo;
     if (v > hi) return hi;
@@ -3795,6 +3801,25 @@ document.addEventListener("DOMContentLoaded", init);
       w: (mm("--paper-w") || 404) * px,
       h: (mm("--paper-h") || 281) * px
     };
+  }
+  function remember(sx, sy){
+    lastSx = sx;
+    lastSy = sy;
+    document.documentElement.style.setProperty("--print-applied-x", String(sx));
+    document.documentElement.style.setProperty("--print-applied-y", String(sy));
+  }
+  function applyScales(box, sx, sy){
+    var blocks = box.querySelector(".blocks");
+    if (!blocks) return;
+    if (sx < 0.35) sx = 0.35;
+    if (sy < 0.35) sy = 0.35;
+    blocks.style.transformOrigin = "top left";
+    blocks.style.transform = "scale(" + sx + ", " + sy + ")";
+    blocks.style.width = (100 / sx) + "%";
+    blocks.style.marginLeft = "0";
+    blocks.style.marginRight = "0";
+    applied.push(blocks);
+    return blocks;
   }
   function boxes(){
     if (document.body.classList.contains("multi-day-print")){
@@ -3832,22 +3857,37 @@ document.addEventListener("DOMContentLoaded", init);
     var fitY = Math.min(1, maxY) * SAFETY;
     var sx = clamp(fitX * userScaleX(), 0.35, maxX * 0.98);
     var sy = clamp(fitY * userScaleY(), 0.35, maxY * 0.98);
-    blocks.style.transformOrigin = "top left";
-    blocks.style.transform = "scale(" + sx + ", " + sy + ")";
-    blocks.style.width = (100 / sx) + "%";
-    blocks.style.marginLeft = "0";
-    blocks.style.marginRight = "0";
-    applied.push(blocks);
-    return blocks;
+    remember(sx, sy);
+    return applyScales(box, sx, sy);
+  }
+  function rememberedScales(){
+    if (lastSx > 0 && lastSy > 0) return { x: lastSx, y: lastSy };
+    return { x: userScaleX() * SAFETY, y: userScaleY() * SAFETY };
+  }
+  function applyRemembered(){
+    window.__suspendPreviewFit = true;
+    applied = [];
+    var s = rememberedScales();
+    remember(s.x, s.y);
+    boxes().forEach(function(box){ applyScales(box, s.x, s.y); });
   }
   function fit(){
+    /* 印刷はプレビューで決めた倍率をそのまま使う。
+       印刷ダイアログの狭い画面幅で測り直すと、伸ばしが消える。 */
+    if (document.body.classList.contains("multi-day-print") && lastSx > 0 && lastSy > 0){
+      applyRemembered();
+      return;
+    }
     window.__suspendPreviewFit = true;
     applied = [];
     boxes().forEach(fitBox);
   }
   function syncPreview(){
     var preview = document.querySelector("#view-print:not([hidden]) .print-preview-page");
-    if (!preview) return;
+    if (!preview){
+      if (!lastSx) remember(userScaleX() * SAFETY, userScaleY() * SAFETY);
+      return;
+    }
     applied = applied.filter(function(el){ return el && el.isConnected && !preview.contains(el); });
     fitBox(preview);
     window.__suspendPreviewFit = false;
@@ -3866,6 +3906,7 @@ document.addEventListener("DOMContentLoaded", init);
     window.__suspendPreviewFit = false;
     syncPreview();
   }
+  remember(userScaleX() * SAFETY, userScaleY() * SAFETY);
   window.addEventListener("beforeprint", fit);
   window.addEventListener("afterprint", clear);
   window.__fitPrintToPaper = fit;
