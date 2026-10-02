@@ -2730,7 +2730,7 @@ document.addEventListener("DOMContentLoaded", init);
 (function(){
   var XKEY = "seat-table-print-stretch-x";
   var YKEY = "seat-table-print-stretch-y";
-  var MIN = 70, MAX = 160, STEP = 5;
+  var MIN = 70, MAX = 250, STEP = 5;
   function read(key){
     var v = parseFloat(STORAGE.getItem(key));
     if (!isFinite(v) || v < MIN/100 || v > MAX/100) return 1;
@@ -3780,7 +3780,7 @@ document.addEventListener("DOMContentLoaded", init);
   }
   function stored(key, fallback){
     var v = parseFloat(STORAGE.getItem(key));
-    return (isFinite(v) && v > 0.2 && v < 2.6) ? v : fallback;
+    return (isFinite(v) && v > 0.2 && v < 3.2) ? v : fallback;
   }
   function userScale(){ return stored("seat-table-print-scale", cssVar("--print-page-scale", 1)); }
   function userScaleX(){ return userScale() * stored("seat-table-print-stretch-x", cssVar("--print-stretch-x", 1)); }
@@ -3855,8 +3855,8 @@ document.addEventListener("DOMContentLoaded", init);
     var maxY = availH / Math.max(1, blocks.scrollHeight);
     var fitX = Math.min(1, maxX) * SAFETY;
     var fitY = Math.min(1, maxY) * SAFETY;
-    var sx = clamp(fitX * userScaleX(), 0.35, maxX * 0.98);
-    var sy = clamp(fitY * userScaleY(), 0.35, maxY * 0.98);
+    var sx = clamp(fitX * userScaleX(), 0.35, maxX * 1.35);
+    var sy = clamp(fitY * userScaleY(), 0.35, maxY * 1.35);
     remember(sx, sy);
     return applyScales(box, sx, sy);
   }
