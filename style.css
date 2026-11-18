@@ -638,10 +638,31 @@ box-shadow: none;
 #view-seat .student-cell.status-course{
 background: #f6f8fd !important;
 box-shadow: inset 4px 0 0 #3f6fd6;
+position: relative;
 }
 #view-seat .student-cell.status-transfer{
 background: #f5faf6 !important;
 box-shadow: inset 4px 0 0 #2e8b57;
+position: relative;
+}
+#view-seat .student-cell.status-course::after,
+#view-seat .student-cell.status-transfer::after{
+position: absolute;
+top: 4px;
+right: 6px;
+font-size: 11px;
+font-weight: 700;
+line-height: 1;
+pointer-events: none;
+z-index: 2;
+}
+#view-seat .student-cell.status-course::after{
+content: "講";
+color: #2a4e9b;
+}
+#view-seat .student-cell.status-transfer::after{
+content: "振";
+color: #1b5e34;
 }
 #view-seat .student-cell.status-absent{
 background: #fdf7f6 !important;
@@ -651,7 +672,7 @@ box-shadow: inset 4px 0 0 #c0392b;
 background: #fffdf3 !important;
 box-shadow: inset 4px 0 0 #d4a017;
 }
-#view-seat .student-cell:has(.js-solo-toggle.active){
+#view-seat .student-cell:has(.js-solo-toggle.active):not(.status-course):not(.status-transfer):not(.status-absent){
 background: #faf6fc !important;
 box-shadow: inset 4px 0 0 #8e44ad;
 }
@@ -945,7 +966,15 @@ grid-template-columns: 9mm 18mm minmax(0, var(--print-subj-col)) minmax(0, var(-
 .student-select{ font-size: var(--print-student-size) !important; font-weight:700; min-width:0; max-width:100%; overflow:hidden; }
 .grade-input{ font-size: var(--print-grade-size) !important; text-align:center; }
 .seat-num-cell input{ font-size:8pt; border:none; text-align:center; }
-.student-cell.status-course{ background:#e4ecff !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+.student-cell.status-course{
+background:#e4ecff !important; -webkit-print-color-adjust:exact; print-color-adjust:exact;
+border:1.6pt solid #3f6fd6 !important;
+position:relative;
+}
+.student-cell.status-course::after{
+content:"講"; position:absolute; right:0.6mm; top:0;
+font-size:7pt; font-weight:700; color:#2a4e9b; line-height:1.1;
+}
 /* 1対1の斜線はセル内SVG実要素。背景画像は使わない。 */
 .cell.solo-blocked{
 position: relative !important;
@@ -964,7 +993,7 @@ overflow: hidden;
 pointer-events: none;
 z-index: 1;
 }
-/* 振替は背景色に頼らず、太い枠線と「振」の印で示す。
+/* 講習・振替は背景色に頼らず、太い枠線と「講」「振」の印で示す。
    Chromeの「背景のグラフィック」がオフだと背景色は印刷されないため。 */
 .student-cell.status-transfer{
 background:#e3f6e8 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact;
