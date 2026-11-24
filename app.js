@@ -4403,6 +4403,8 @@ document.addEventListener("DOMContentLoaded", init);
    ?import= を検知して取り込み確認を出す。
    ========================================================== */
 (function(){
+  // Sharing temporarily disabled: do not register QR sending or URL import.
+  return;
   function toB64(str){
     return btoa(unescape(encodeURIComponent(str))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
   }
@@ -4632,6 +4634,8 @@ document.addEventListener("DOMContentLoaded", init);
    読み書きできない（合言葉を知らないと中身は見えない）。
    ========================================================== */
 (function(){
+  // Sharing temporarily disabled: do not register cloud sending or receiving.
+  return;
   var SUPABASE_URL = "https://uglxilcwbgqoofnzngux.supabase.co";
   var SUPABASE_KEY = "sb_publishable_R83zSq90hslRd5jl04sIPg_hZlLxfRC";
   /* 校舎ごとに合言葉のキーを分ける。他校の座席表アプリと同じ
